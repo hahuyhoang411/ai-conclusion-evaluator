@@ -7,7 +7,8 @@ import { User, PostgrestError } from '@supabase/supabase-js';
 
 type EvaluatorState = {
   status: 'initializing' | 'loading_tasks' | 'needs_survey' | 'evaluating' | 'complete' | 'error';
-  tasks: Task[];
+  allTasks: Task[];
+  assignedTasks: Task[];
   annotator: Annotator | null;
   completedEvaluations: Evaluation[];
   currentTask: Task | null;
@@ -20,7 +21,8 @@ export const useEvaluator = () => {
   const { user } = useAuth();
   const [state, setState] = useState<EvaluatorState>({
     status: 'initializing',
-    tasks: [],
+    allTasks: [],
+    assignedTasks: [],
     annotator: null,
     completedEvaluations: [],
     currentTask: null,
@@ -35,13 +37,34 @@ export const useEvaluator = () => {
     setState(prev => ({ ...prev, status: 'error', error: message }));
   }, []);
 
+  const getNextBlockNumber = async (): Promise<number> => {
+    // This function should be executed with service_role privileges
+    // if you have RLS policies that restrict selecting other annotators.
+    // Consider creating a Supabase Edge Function for this.
+    // For now, we assume the user can read the `annotators` table.
+    const { data, error } = await (supabase as any)
+      .from('annotators')
+      .select('block_number')
+      .not('block_number', 'is', null)
+      .order('block_number', { ascending: false })
+      .limit(1)
+      .single();
+
+    if (error && error.code !== 'PGRST116') { // Ignore "not found"
+      handleError('Could not determine next task block.', error);
+      throw new Error('Could not determine next task block.');
+    }
+
+    return (data?.block_number ?? -1) + 1;
+  };
+
   const loadTasks = useCallback(async () => {
     setState(prev => ({ ...prev, status: 'loading_tasks' }));
     try {
       const response = await fetch('/tasks.json');
       if (!response.ok) throw new Error('Failed to fetch tasks.json');
       const tasksData: Task[] = await response.json();
-      setState(prev => ({ ...prev, tasks: tasksData }));
+      setState(prev => ({ ...prev, allTasks: tasksData }));
       return tasksData;
     } catch (error) {
       handleError('Failed to load evaluation tasks.', error);
@@ -49,51 +72,60 @@ export const useEvaluator = () => {
     }
   }, [handleError]);
 
-  const getOrCreateAnnotator = useCallback(async (user: User, attempt = 1): Promise<Annotator | null> => {
-    // The `handle_new_user` trigger in Supabase should create an annotator record automatically.
-    // We poll briefly to give the trigger time to complete.
+  const getOrCreateAnnotator = useCallback(async (user: User): Promise<Annotator | null> => {
     try {
-      const { data, error } = await (supabase as any)
+      // First, check if the user's annotator profile exists.
+      // The `handle_new_user` trigger in Supabase should create this on sign-up.
+      let { data: annotator, error: fetchError } = await (supabase as any)
         .from('annotators')
         .select('*')
         .eq('id', user.id)
         .single();
 
-      if (error && error.code !== 'PGRST116') throw error; // Throw if it's not a "not found" error
+      if (fetchError && fetchError.code !== 'PGRST116') {
+        throw fetchError;
+      }
+      
+      // If annotator doesn't exist, create it as a fallback.
+      // This requires an RLS policy allowing users to insert their own record.
+      if (!annotator) {
+        console.warn('Annotator record not found. Attempting to create from client...');
+        const { data: newAnnotator, error: insertError } = await (supabase as any)
+          .from('annotators')
+          .insert({ id: user.id, email: user.email })
+          .select()
+          .single();
+        
+        if (insertError) {
+          handleError('Could not create your user profile. Please contact support.', insertError);
+          return null;
+        }
+        annotator = newAnnotator;
+        console.log('Successfully created annotator profile.');
+      }
 
-      if (data) {
-        return data as Annotator;
-      }
-      
-      // If not found, wait and retry once.
-      if (attempt <= 2) {
-        console.log(`Annotator for ${user.email} not found, retrying... (Attempt ${attempt})`)
-        await new Promise(resolve => setTimeout(resolve, 1000));
-        return getOrCreateAnnotator(user, attempt + 1);
+      // If the annotator doesn't have a block number, assign one.
+      if (annotator && annotator.block_number === null) {
+        console.log(`Annotator ${user.email} needs a task block. Assigning one...`);
+        const nextBlock = await getNextBlockNumber();
+        
+        const { data: updatedAnnotator, error: updateError } = await (supabase as any)
+          .from('annotators')
+          .update({ block_number: nextBlock })
+          .eq('id', user.id)
+          .select()
+          .single();
+
+        if (updateError) {
+          handleError('Failed to assign a task block. Please try again.', updateError);
+          return null; // or return the annotator without a block
+        }
+
+        console.log(`Assigned block ${nextBlock} to ${user.email}.`);
+        return updatedAnnotator as Annotator;
       }
 
-      // If it still doesn't exist, the trigger likely failed.
-      // The most common reason is that the `annotators` table is missing a `id` column
-      // of type `uuid` that is linked to `auth.users.id`.
-      // We will attempt to create it from the client as a fallback.
-      // NOTE: This requires an RLS policy that allows users to insert their own annotator record.
-      console.warn('Annotator record not found, and trigger may have failed. Attempting to create from client...');
-      const { data: newAnnotator, error: insertError } = await (supabase as any)
-        .from('annotators')
-        .insert({ id: user.id, email: user.email })
-        .select()
-        .single();
-      
-      if (insertError) {
-        handleError('Could not create your user profile. Please contact support.', insertError);
-        // This is a critical failure, RLS is likely misconfigured.
-        // The policy should be: CREATE POLICY "Users can create their own annotator profile"
-        // ON public.annotators FOR INSERT WITH CHECK (auth.uid() = id);
-        return null;
-      }
-      
-      console.log('Successfully created annotator profile from client fallback.');
-      return newAnnotator as Annotator;
+      return annotator as Annotator;
 
     } catch (error) {
       handleError('There was an issue accessing your user profile.', error);
@@ -101,12 +133,32 @@ export const useEvaluator = () => {
     }
   }, [handleError]);
 
-  const loadUserAndProgress = useCallback(async (user: User, tasks: Task[]) => {
+  const loadUserAndProgress = useCallback(async (user: User, allTasks: Task[]) => {
     const annotatorProfile = await getOrCreateAnnotator(user);
     if (!annotatorProfile) return;
 
+    // New: Determine the task slice for this annotator
+    const blockNumber = annotatorProfile.block_number;
+    const blockSize = 20;
+    
+    if (blockNumber === null) {
+      handleError('Could not determine your assigned tasks. The block number is missing.');
+      return;
+    }
+
+    const startIndex = blockNumber * blockSize;
+    const endIndex = startIndex + blockSize;
+    const assignedTasks = allTasks.slice(startIndex, endIndex);
+
+    if (assignedTasks.length === 0) {
+      // This can happen if the block number is too high for the number of tasks
+      console.warn(`No tasks found for block ${blockNumber}. The user might have completed all available tasks or the block is out of bounds.`);
+      setState(prev => ({ ...prev, status: 'complete', annotator: annotatorProfile, user }));
+      return;
+    }
+
     if (!annotatorProfile.expertise_group) {
-      setState(prev => ({ ...prev, status: 'needs_survey', annotator: annotatorProfile, user }));
+      setState(prev => ({ ...prev, status: 'needs_survey', annotator: annotatorProfile, user, assignedTasks }));
       return;
     }
 
@@ -119,15 +171,16 @@ export const useEvaluator = () => {
       if (error) throw error;
 
       const completedIds = new Set(evaluations.map(e => e.task_id));
-      const nextTask = tasks.find(t => !completedIds.has(t.taskId)) || null;
+      const nextTask = assignedTasks.find(t => !completedIds.has(t.taskId)) || null;
 
       setState(prev => ({
         ...prev,
+        assignedTasks: assignedTasks,
         annotator: annotatorProfile,
         completedEvaluations: evaluations || [],
         status: nextTask ? 'evaluating' : 'complete',
         currentTask: nextTask,
-        progress: { current: completedIds.size, total: tasks.length },
+        progress: { current: completedIds.size, total: assignedTasks.length },
         user,
       }));
     } catch (error) {
@@ -138,9 +191,9 @@ export const useEvaluator = () => {
   // Main effect to drive the logic
   useEffect(() => {
     if (user) {
-      loadTasks().then(tasks => {
-        if (tasks.length > 0) {
-          loadUserAndProgress(user, tasks);
+      loadTasks().then(allTasks => {
+        if (allTasks.length > 0) {
+          loadUserAndProgress(user, allTasks);
         }
       });
     } else {
@@ -175,14 +228,14 @@ export const useEvaluator = () => {
       setState(prev => {
         const updatedEvaluations = [...prev.completedEvaluations, data];
         const completedIds = new Set(updatedEvaluations.map(e => e.task_id));
-        const nextTask = prev.tasks.find(t => !completedIds.has(t.taskId)) || null;
+        const nextTask = prev.assignedTasks.find(t => !completedIds.has(t.taskId)) || null;
         
         return {
           ...prev,
           completedEvaluations: updatedEvaluations,
           currentTask: nextTask,
           status: nextTask ? 'evaluating' : 'complete',
-          progress: { current: completedIds.size, total: prev.tasks.length },
+          progress: { current: completedIds.size, total: prev.assignedTasks.length },
         };
       });
 
@@ -208,7 +261,7 @@ export const useEvaluator = () => {
       
       // Reload progress
       if (user) {
-        loadUserAndProgress(user, state.tasks);
+        loadUserAndProgress(user, state.allTasks);
       }
 
     } catch (error) {
