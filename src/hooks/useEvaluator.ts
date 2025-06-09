@@ -38,24 +38,14 @@ export const useEvaluator = () => {
   }, []);
 
   const getNextBlockNumber = async (): Promise<number> => {
-    // This function should be executed with service_role privileges
-    // if you have RLS policies that restrict selecting other annotators.
-    // Consider creating a Supabase Edge Function for this.
-    // For now, we assume the user can read the `annotators` table.
-    const { data, error } = await (supabase as any)
-      .from('annotators')
-      .select('block_number')
-      .not('block_number', 'is', null)
-      .order('block_number', { ascending: false })
-      .limit(1)
-      .single();
+    const { data, error } = await supabase.functions.invoke('get-next-block');
 
-    if (error && error.code !== 'PGRST116') { // Ignore "not found"
+    if (error) {
       handleError('Could not determine next task block.', error);
       throw new Error('Could not determine next task block.');
     }
 
-    return (data?.block_number ?? -1) + 1;
+    return data.nextBlockNumber;
   };
 
   const loadTasks = useCallback(async () => {
