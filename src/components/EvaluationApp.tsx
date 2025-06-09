@@ -77,7 +77,7 @@ const EvaluationApp = () => {
       }
 
       if (data && data.length > 0) {
-        const completedTaskIds = data.map(eval => eval.task_id);
+        const completedTaskIds = data.map(evaluation => evaluation.task_id);
         const nextTaskIndex = tasks.findIndex(task => !completedTaskIds.includes(task.taskId));
         setCurrentTaskIndex(nextTaskIndex >= 0 ? nextTaskIndex : tasks.length);
       }
