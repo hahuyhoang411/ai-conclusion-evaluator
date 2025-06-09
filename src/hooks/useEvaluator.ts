@@ -3,7 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { Task, Annotator, Evaluation } from '@/types/evaluation';
 import { toast } from 'sonner';
-import { User } from '@supabase/supabase-js';
+import { User, PostgrestError } from '@supabase/supabase-js';
 
 type EvaluatorState = {
   status: 'initializing' | 'loading_tasks' | 'needs_survey' | 'evaluating' | 'complete' | 'error';
@@ -53,7 +53,7 @@ export const useEvaluator = () => {
     // The `handle_new_user` trigger in Supabase should create an annotator record automatically.
     // We poll briefly to give the trigger time to complete.
     try {
-      const { data, error } = await supabase
+      const { data, error } = await (supabase as any)
         .from('annotators')
         .select('*')
         .eq('user_id', user.id)
@@ -62,7 +62,7 @@ export const useEvaluator = () => {
       if (error && error.code !== 'PGRST116') throw error; // Throw if it's not a "not found" error
 
       if (data) {
-        return data;
+        return data as Annotator;
       }
       
       // If not found, wait and retry once.
@@ -78,7 +78,7 @@ export const useEvaluator = () => {
       // We will attempt to create it from the client as a fallback.
       // NOTE: This requires an RLS policy that allows users to insert their own annotator record.
       console.warn('Annotator record not found, and trigger may have failed. Attempting to create from client...');
-      const { data: newAnnotator, error: insertError } = await supabase
+      const { data: newAnnotator, error: insertError } = await (supabase as any)
         .from('annotators')
         .insert({ user_id: user.id, email: user.email })
         .select()
@@ -93,7 +93,7 @@ export const useEvaluator = () => {
       }
       
       console.log('Successfully created annotator profile from client fallback.');
-      return newAnnotator;
+      return newAnnotator as Annotator;
 
     } catch (error) {
       handleError('There was an issue accessing your user profile.', error);

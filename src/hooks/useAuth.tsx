@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
@@ -29,7 +28,7 @@ export const useAuth = () => {
   }, []);
 
   const signInWithMagicLink = async (email: string) => {
-    const redirectUrl = `${window.location.origin}/`;
+    const redirectUrl = `${import.meta.env.VITE_SITE_URL || window.location.origin}/`;
     
     const { error } = await supabase.auth.signInWithOtp({
       email,
