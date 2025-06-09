@@ -1,0 +1,29 @@
+
+[
+  {
+    "taskId": 1,
+    "sourceAbstracts": [
+      "Abstract 1 Text: Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed non risus. Suspendisse lectus tortor, dignissim sit amet, adipiscing nec, ultricies sed, dolor.",
+      "Abstract 2 Text: Cras elementum ultrices diam. Maecenas ligula massa, varius a, semper congue, euismod non, mi. Proin porttitor, orci nec nonummy molestie, enim est eleifend mi, non fermentum diam nisl sit amet erat.",
+      "Abstract 3 Text: Duis ac turpis. Integer rutrum ante eu lacus. Quisque nulla. Vestibulum libero nisl, porta vel, scelerisque eget, malesuada at, neque."
+    ],
+    "referenceConclusion": "The meta-analysis of these studies indicates a significant positive effect, with a combined odds ratio of 2.5 (95% CI, 1.8-3.2). However, significant heterogeneity was observed (I² = 78%), suggesting caution in interpretation. Future research should focus on stratified populations.",
+    "modelOutputs": {
+      "conclusionA": "Based on the abstracts, there is a strong positive effect. The odds ratio is 2.5. The confidence interval is 1.8 to 3.2. There was a lot of heterogeneity.",
+      "conclusionB": "A comprehensive review of the provided abstracts suggests a statistically significant positive effect. Key limitations include the high heterogeneity across studies, which necessitates cautious interpretation of the results."
+    }
+  },
+  {
+    "taskId": 2,
+    "sourceAbstracts": [
+      "Abstract 1: A randomized controlled trial examining the efficacy of intervention X showed significant improvement in primary outcomes (p<0.001) among participants aged 18-65.",
+      "Abstract 2: Secondary analysis revealed that the intervention was particularly effective in subgroup Y, with effect sizes ranging from moderate to large (Cohen's d = 0.6-1.2).",
+      "Abstract 3: Long-term follow-up at 12 months demonstrated sustained benefits, though some participants experienced mild side effects that resolved within 2 weeks."
+    ],
+    "referenceConclusion": "The intervention demonstrates robust efficacy across multiple outcomes with sustained long-term benefits. While generally well-tolerated, clinicians should monitor for transient side effects during initial treatment phases. The intervention shows particular promise for subgroup Y populations.",
+    "modelOutputs": {
+      "conclusionA": "The intervention works well and has long-term benefits. There are some side effects but they go away quickly. It works especially well for certain groups of people.",
+      "conclusionB": "Evidence supports the intervention's effectiveness with significant primary outcome improvements (p<0.001). Notable efficacy in subgroup Y with moderate to large effect sizes. Sustained 12-month benefits observed, with mild, self-resolving side effects reported."
+    }
+  }
+]
