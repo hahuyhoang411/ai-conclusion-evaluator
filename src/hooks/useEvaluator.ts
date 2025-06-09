@@ -56,7 +56,7 @@ export const useEvaluator = () => {
       const { data, error } = await (supabase as any)
         .from('annotators')
         .select('*')
-        .eq('user_id', user.id)
+        .eq('id', user.id)
         .single();
 
       if (error && error.code !== 'PGRST116') throw error; // Throw if it's not a "not found" error
@@ -73,14 +73,14 @@ export const useEvaluator = () => {
       }
 
       // If it still doesn't exist, the trigger likely failed.
-      // The most common reason is that the `annotators` table is missing a `user_id` column
+      // The most common reason is that the `annotators` table is missing a `id` column
       // of type `uuid` that is linked to `auth.users.id`.
       // We will attempt to create it from the client as a fallback.
       // NOTE: This requires an RLS policy that allows users to insert their own annotator record.
       console.warn('Annotator record not found, and trigger may have failed. Attempting to create from client...');
       const { data: newAnnotator, error: insertError } = await (supabase as any)
         .from('annotators')
-        .insert({ user_id: user.id, email: user.email })
+        .insert({ id: user.id, email: user.email })
         .select()
         .single();
       
@@ -88,7 +88,7 @@ export const useEvaluator = () => {
         handleError('Could not create your user profile. Please contact support.', insertError);
         // This is a critical failure, RLS is likely misconfigured.
         // The policy should be: CREATE POLICY "Users can create their own annotator profile"
-        // ON public.annotators FOR INSERT WITH CHECK (auth.uid() = user_id);
+        // ON public.annotators FOR INSERT WITH CHECK (auth.uid() = id);
         return null;
       }
       

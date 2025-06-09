@@ -81,11 +81,11 @@ The application requires two main tables in your Supabase database:
 ```sql
 CREATE TABLE public.annotators (
   id UUID NOT NULL DEFAULT gen_random_uuid() PRIMARY KEY,
-  user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL,
+  id UUID REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL,
   email TEXT,
   expertise_group TEXT CHECK (expertise_group IN ('medical', 'general')),
   created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now(),
-  UNIQUE(user_id)
+  UNIQUE(id)
 );
 ```
 
