@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
@@ -39,11 +38,11 @@ const EvaluationApp = () => {
     if (!user) return;
 
     try {
-      // First try to get existing annotator
+      // First try to get existing annotator by email
       let { data, error } = await supabase
         .from('annotators')
         .select('*')
-        .eq('user_id', user.id)
+        .eq('email', user.email)
         .single();
 
       // If no annotator exists, create one
@@ -52,7 +51,6 @@ const EvaluationApp = () => {
         const { data: newAnnotator, error: insertError } = await supabase
           .from('annotators')
           .insert({
-            user_id: user.id,
             email: user.email
           })
           .select()

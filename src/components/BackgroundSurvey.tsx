@@ -28,7 +28,7 @@ const BackgroundSurvey: React.FC<BackgroundSurveyProps> = ({ onComplete }) => {
       const { error } = await supabase
         .from('annotators')
         .update({ expertise_group: selectedBackground })
-        .eq('user_id', user.id);
+        .eq('email', user.email);
 
       if (error) throw error;
 
