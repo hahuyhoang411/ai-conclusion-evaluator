@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
@@ -15,19 +16,24 @@ const EvaluationApp = () => {
   const [loading, setLoading] = useState(false);
   const [annotator, setAnnotator] = useState<Annotator | null>(null);
   const [needsBackgroundSurvey, setNeedsBackgroundSurvey] = useState(false);
+  const [isInitializing, setIsInitializing] = useState(true);
 
   useEffect(() => {
     loadTasks();
-    if (user) {
+  }, []);
+
+  useEffect(() => {
+    if (user && tasks.length > 0) {
       checkAnnotatorProfile();
     }
-  }, [user]);
+  }, [user, tasks]);
 
   const loadTasks = async () => {
     try {
       const response = await fetch('/tasks.json');
       const tasksData = await response.json();
       setTasks(tasksData);
+      console.log('Tasks loaded:', tasksData.length);
     } catch (error) {
       console.error('Error loading tasks:', error);
       toast.error('Failed to load evaluation tasks');
@@ -36,6 +42,9 @@ const EvaluationApp = () => {
 
   const checkAnnotatorProfile = async () => {
     if (!user) return;
+    
+    console.log('Checking annotator profile for user:', user.email);
+    setIsInitializing(true);
 
     try {
       // First try to get existing annotator by email
@@ -58,12 +67,17 @@ const EvaluationApp = () => {
 
         if (insertError) {
           console.error('Error creating annotator:', insertError);
+          toast.error('Failed to create user profile');
+          setIsInitializing(false);
           return;
         }
 
         data = newAnnotator;
+        console.log('New annotator created:', data);
       } else if (error) {
         console.error('Error fetching annotator:', error);
+        toast.error('Failed to load user profile');
+        setIsInitializing(false);
         return;
       }
 
@@ -74,16 +88,21 @@ const EvaluationApp = () => {
       if (!data.expertise_group) {
         console.log('Background survey needed');
         setNeedsBackgroundSurvey(true);
+        setIsInitializing(false);
       } else {
         console.log('Background survey completed, loading progress');
         await loadProgress(data.id);
+        setIsInitializing(false);
       }
     } catch (error) {
       console.error('Error checking annotator profile:', error);
+      toast.error('Failed to initialize user profile');
+      setIsInitializing(false);
     }
   };
 
   const loadProgress = async (annotatorId: string) => {
+    console.log('Loading progress for annotator:', annotatorId);
     try {
       const { data, error } = await supabase
         .from('evaluations')
@@ -96,10 +115,16 @@ const EvaluationApp = () => {
         return;
       }
 
+      console.log('Evaluation data:', data);
       if (data && data.length > 0) {
-        const completedTaskIds = data.map(evaluation => evaluation.task_id);
+        const completedTaskIds = data.map(evaluation => evaluation.task_id).filter(id => id !== null);
+        console.log('Completed task IDs:', completedTaskIds);
         const nextTaskIndex = tasks.findIndex(task => !completedTaskIds.includes(task.taskId));
+        console.log('Next task index:', nextTaskIndex);
         setCurrentTaskIndex(nextTaskIndex >= 0 ? nextTaskIndex : tasks.length);
+      } else {
+        console.log('No previous evaluations found, starting from task 0');
+        setCurrentTaskIndex(0);
       }
     } catch (error) {
       console.error('Error loading progress:', error);
@@ -107,14 +132,21 @@ const EvaluationApp = () => {
   };
 
   const handleBackgroundSurveyComplete = () => {
+    console.log('Background survey completed');
     setNeedsBackgroundSurvey(false);
+    // Reload annotator profile to get updated expertise_group
     checkAnnotatorProfile();
   };
 
   const handleTaskSubmit = async (scores: { scoreA: number; scoreB: number }) => {
-    if (!annotator || !tasks[currentTaskIndex]) return;
+    if (!annotator || !tasks[currentTaskIndex]) {
+      console.error('Missing annotator or task data');
+      return;
+    }
 
+    console.log('Submitting task:', currentTaskIndex, 'with scores:', scores);
     setLoading(true);
+    
     try {
       const { error } = await supabase
         .from('evaluations')
@@ -127,10 +159,18 @@ const EvaluationApp = () => {
           evaluation_end_time: new Date().toISOString()
         });
 
-      if (error) throw error;
+      if (error) {
+        console.error('Error submitting evaluation:', error);
+        throw error;
+      }
 
+      console.log('Evaluation submitted successfully');
       toast.success('Evaluation submitted successfully');
-      setCurrentTaskIndex(prev => prev + 1);
+      
+      // Move to next task
+      const nextIndex = currentTaskIndex + 1;
+      console.log('Moving to task index:', nextIndex);
+      setCurrentTaskIndex(nextIndex);
     } catch (error) {
       console.error('Error submitting evaluation:', error);
       toast.error('Failed to submit evaluation');
@@ -139,14 +179,28 @@ const EvaluationApp = () => {
     }
   };
 
+  // Show loading while initializing
+  if (isInitializing) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <p className="text-lg text-gray-600">Initializing...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Show background survey if needed
   if (needsBackgroundSurvey) {
     return <BackgroundSurvey onComplete={handleBackgroundSurveyComplete} />;
   }
 
+  // Show completion page if all tasks done
   if (currentTaskIndex >= tasks.length) {
     return <CompletionPage />;
   }
 
+  // Show loading if tasks not loaded yet
   if (tasks.length === 0) {
     return (
       <div className="min-h-screen flex items-center justify-center">

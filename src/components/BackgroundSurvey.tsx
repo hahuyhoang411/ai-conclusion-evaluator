@@ -23,15 +23,21 @@ const BackgroundSurvey: React.FC<BackgroundSurveyProps> = ({ onComplete }) => {
       return;
     }
 
+    console.log('Submitting background survey:', selectedBackground);
     setLoading(true);
+    
     try {
       const { error } = await supabase
         .from('annotators')
         .update({ expertise_group: selectedBackground })
         .eq('email', user.email);
 
-      if (error) throw error;
+      if (error) {
+        console.error('Error saving background:', error);
+        throw error;
+      }
 
+      console.log('Background information saved successfully');
       toast.success('Background information saved');
       onComplete();
     } catch (error) {
