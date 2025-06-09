@@ -1,5 +1,6 @@
 export interface Task {
   taskId: number;
+  metaAnalysisName: string;
   sourceAbstracts: string[];
   referenceConclusion: string;
   modelOutputs: {
