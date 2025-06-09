@@ -39,23 +39,45 @@ const EvaluationApp = () => {
     if (!user) return;
 
     try {
-      const { data, error } = await supabase
+      // First try to get existing annotator
+      let { data, error } = await supabase
         .from('annotators')
         .select('*')
         .eq('user_id', user.id)
         .single();
 
-      if (error) {
+      // If no annotator exists, create one
+      if (error && error.code === 'PGRST116') {
+        console.log('No annotator found, creating new one...');
+        const { data: newAnnotator, error: insertError } = await supabase
+          .from('annotators')
+          .insert({
+            user_id: user.id,
+            email: user.email
+          })
+          .select()
+          .single();
+
+        if (insertError) {
+          console.error('Error creating annotator:', insertError);
+          return;
+        }
+
+        data = newAnnotator;
+      } else if (error) {
         console.error('Error fetching annotator:', error);
         return;
       }
 
+      console.log('Annotator data:', data);
       setAnnotator(data);
       
       // Check if background survey is needed
       if (!data.expertise_group) {
+        console.log('Background survey needed');
         setNeedsBackgroundSurvey(true);
       } else {
+        console.log('Background survey completed, loading progress');
         await loadProgress(data.id);
       }
     } catch (error) {
