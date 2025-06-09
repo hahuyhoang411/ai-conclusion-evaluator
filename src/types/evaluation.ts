@@ -1,4 +1,3 @@
-
 export interface Task {
   taskId: number;
   sourceAbstracts: string[];
@@ -11,6 +10,7 @@ export interface Task {
 
 export interface Annotator {
   id: string;
+  user_id: string;
   email: string | null;
   expertise_group: string | null;
   created_at: string;
