@@ -1,5 +1,6 @@
 import React from 'react';
 import { useEvaluator } from '@/hooks/useEvaluator';
+import Introduction from './Introduction';
 import ScoringRubric from './ScoringRubric';
 import TaskEvaluation from './TaskEvaluation';
 import CompletionPage from './CompletionPage';
@@ -58,6 +59,7 @@ const EvaluationApp = () => {
             </p>
           </div>
           
+          <Introduction />
           <ScoringRubric />
           
           <TaskEvaluation
