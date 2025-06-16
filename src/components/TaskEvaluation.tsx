@@ -54,8 +54,8 @@ const TaskEvaluation: React.FC<TaskEvaluationProps> = ({
   ];
 
   const getTaskTitle = () => {
-    if (task.sourcePaperId) {
-      return `Paper ID: ${task.sourcePaperId}`;
+    if (task.sourcePaperTitle) {
+      return `Paper Title: ${task.sourcePaperTitle}`;
     }
     return task.metaAnalysisName || 'Meta Analysis';
   };
@@ -90,7 +90,7 @@ const TaskEvaluation: React.FC<TaskEvaluationProps> = ({
         <CardHeader>
           <div className='mb-4'>
             <h3 className="text-sm font-semibold text-gray-500">
-              {task.sourcePaperId ? 'Source Paper' : 'Meta Analysis Title'}
+              {task.sourcePaperTitle ? 'Source Paper' : 'Meta Analysis'}
             </h3>
             <p className="text-lg text-gray-800">{getTaskTitle()}</p>
           </div>

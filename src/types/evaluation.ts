@@ -1,7 +1,7 @@
-
 export interface Task {
   taskId: number | string;
   sourcePaperId?: number;
+  sourcePaperTitle?: string;
   sourceAbstracts: string[];
   referenceConclusion: string;
   modelOutputs: {
