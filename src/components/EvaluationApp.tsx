@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { useEvaluator } from '@/hooks/useEvaluator';
 import Introduction from './Introduction';
@@ -13,6 +14,8 @@ const EvaluationApp = () => {
     error, 
     currentTask,
     progress, 
+    trainingProgress,
+    isInTrainingMode,
     submitEvaluation, 
     submitBackgroundSurvey 
   } = useEvaluator();
@@ -46,17 +49,33 @@ const EvaluationApp = () => {
     );
   }
 
-  if (status === 'evaluating' && currentTask) {
+  if ((status === 'training' || status === 'evaluating') && currentTask) {
+    const currentProgress = isInTrainingMode ? trainingProgress : progress;
+    const modeTitle = isInTrainingMode ? 'Training Phase' : 'Evaluation Phase';
+    const modeDescription = isInTrainingMode 
+      ? 'Complete these training examples to familiarize yourself with the scoring process'
+      : 'Please evaluate the quality of AI-generated conclusions compared to the reference';
+
     return (
       <div className="min-h-screen bg-gray-50 py-8">
         <div className="max-w-6xl mx-auto px-4">
           <div className="mb-8 text-center">
             <h1 className="text-3xl font-bold text-gray-900 mb-2">
-              Human Evaluation Study
+              Human Evaluation Study - {modeTitle}
             </h1>
             <p className="text-gray-600">
-              Please evaluate the quality of AI-generated conclusions compared to the reference
+              {modeDescription}
             </p>
+            {isInTrainingMode && (
+              <div className="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                <p className="text-blue-800 font-medium">
+                  🎯 Training Mode: Practice scoring before the actual evaluation
+                </p>
+                <p className="text-blue-600 text-sm mt-1">
+                  These tasks include correct scores for reference - use them to calibrate your scoring
+                </p>
+              </div>
+            )}
           </div>
           
           <Introduction />
@@ -64,23 +83,23 @@ const EvaluationApp = () => {
           
           <TaskEvaluation
             task={currentTask}
-            currentTaskIndex={progress.current}
-            totalTasks={progress.total}
+            currentTaskIndex={currentProgress.current}
+            totalTasks={currentProgress.total}
             onSubmit={submitEvaluation}
-            loading={false} // Loading state can be handled more granularly if needed
+            loading={false}
+            isTraining={isInTrainingMode}
           />
         </div>
       </div>
     );
   }
 
-  // Fallback for any other state
   return (
     <div className="min-h-screen flex items-center justify-center">
-        <div className="text-center">
-          <p className="text-lg text-gray-600">Loading...</p>
-        </div>
+      <div className="text-center">
+        <p className="text-lg text-gray-600">Loading...</p>
       </div>
+    </div>
   );
 };
 

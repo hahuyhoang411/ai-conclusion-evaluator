@@ -1,12 +1,29 @@
+
 export interface Task {
-  taskId: number;
-  metaAnalysisName: string;
+  taskId: number | string;
+  sourcePaperId?: number;
   sourceAbstracts: string[];
   referenceConclusion: string;
   modelOutputs: {
     conclusionA: string;
     conclusionB: string;
   };
+  modelIdentities?: {
+    modelA: string;
+    modelB: string;
+  };
+  correctScores?: {
+    modelA_score: number;
+    modelB_score: number;
+  };
+  isTraining: boolean;
+  // Legacy support for old format
+  metaAnalysisName?: string;
+}
+
+export interface TasksData {
+  trainingTasks: Task[];
+  evaluationTasks: Task[];
 }
 
 export interface Annotator {
@@ -17,20 +34,10 @@ export interface Annotator {
   block_number: number | null;
 }
 
-/* 
-  SQL to add the block_number column to your Supabase table:
-
-  ALTER TABLE public.annotators
-  ADD COLUMN block_number INTEGER;
-
-  -- Optional: Create an index for faster lookups
-  CREATE INDEX idx_annotators_block_number ON public.annotators(block_number);
-*/
-
 export interface Evaluation {
   id: number;
   annotator_id: string;
-  task_id: number | null;
+  task_id: number | string | null;
   score_a: number | null;
   score_b: number | null;
   session_start_time: string | null;

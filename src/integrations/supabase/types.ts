@@ -11,18 +11,21 @@ export type Database = {
     Tables: {
       annotators: {
         Row: {
+          block_number: number | null
           created_at: string
           email: string | null
           expertise_group: string | null
           id: string
         }
         Insert: {
+          block_number?: number | null
           created_at?: string
           email?: string | null
           expertise_group?: string | null
           id?: string
         }
         Update: {
+          block_number?: number | null
           created_at?: string
           email?: string | null
           expertise_group?: string | null

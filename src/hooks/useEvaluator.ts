@@ -1,18 +1,22 @@
+
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
-import { Task, Annotator, Evaluation } from '@/types/evaluation';
+import { Task, Annotator, Evaluation, TasksData } from '@/types/evaluation';
 import { toast } from 'sonner';
 import { User, PostgrestError } from '@supabase/supabase-js';
 
 type EvaluatorState = {
-  status: 'initializing' | 'loading_tasks' | 'needs_survey' | 'evaluating' | 'complete' | 'error';
-  allTasks: Task[];
+  status: 'initializing' | 'loading_tasks' | 'needs_survey' | 'training' | 'evaluating' | 'complete' | 'error';
+  allTrainingTasks: Task[];
+  allEvaluationTasks: Task[];
   assignedTasks: Task[];
   annotator: Annotator | null;
   completedEvaluations: Evaluation[];
   currentTask: Task | null;
   progress: { current: number; total: number };
+  trainingProgress: { current: number; total: number };
+  isInTrainingMode: boolean;
   error: string | null;
   user: User | null;
 };
@@ -21,12 +25,15 @@ export const useEvaluator = () => {
   const { user } = useAuth();
   const [state, setState] = useState<EvaluatorState>({
     status: 'initializing',
-    allTasks: [],
+    allTrainingTasks: [],
+    allEvaluationTasks: [],
     assignedTasks: [],
     annotator: null,
     completedEvaluations: [],
     currentTask: null,
     progress: { current: 0, total: 0 },
+    trainingProgress: { current: 0, total: 0 },
+    isInTrainingMode: false,
     error: null,
     user: null,
   });
@@ -53,40 +60,62 @@ export const useEvaluator = () => {
     try {
       const response = await fetch('/tasks.json');
       if (!response.ok) throw new Error('Failed to fetch tasks.json');
-      const tasksData: Task[] = await response.json();
-      setState(prev => ({ ...prev, allTasks: tasksData }));
-      return tasksData;
+      const tasksData = await response.json();
+      
+      // Handle both old and new format
+      let trainingTasks: Task[] = [];
+      let evaluationTasks: Task[] = [];
+      
+      if (Array.isArray(tasksData)) {
+        // Old format - treat all as evaluation tasks
+        evaluationTasks = tasksData.map(task => ({ ...task, isTraining: false }));
+      } else if (tasksData.trainingTasks && tasksData.evaluationTasks) {
+        // New format
+        trainingTasks = tasksData.trainingTasks.map(task => ({ ...task, isTraining: true }));
+        evaluationTasks = tasksData.evaluationTasks.map(task => ({ ...task, isTraining: false }));
+      }
+      
+      setState(prev => ({ 
+        ...prev, 
+        allTrainingTasks: trainingTasks,
+        allEvaluationTasks: evaluationTasks 
+      }));
+      
+      return { trainingTasks, evaluationTasks };
     } catch (error) {
       handleError('Failed to load evaluation tasks.', error);
-      return [];
+      return { trainingTasks: [], evaluationTasks: [] };
     }
   }, [handleError]);
 
   const getOrCreateAnnotator = useCallback(async (user: User): Promise<Annotator | null> => {
     try {
-      // First, check if the user's annotator profile exists.
-      // The `handle_new_user` trigger in Supabase should create this on sign-up.
-      let { data: annotator, error: fetchError } = await (supabase as any)
+      console.log('Checking annotator profile for user:', user.email);
+      
+      let { data: annotator, error: fetchError } = await supabase
         .from('annotators')
         .select('*')
-        .eq('id', user.id)
+        .eq('email', user.email)
         .single();
 
       if (fetchError && fetchError.code !== 'PGRST116') {
+        console.log('Error fetching annotator:', fetchError);
         throw fetchError;
       }
       
-      // If annotator doesn't exist, create it as a fallback.
-      // This requires an RLS policy allowing users to insert their own record.
       if (!annotator) {
-        console.warn('Annotator record not found. Attempting to create from client...');
-        const { data: newAnnotator, error: insertError } = await (supabase as any)
+        console.log('No annotator found, creating new one...');
+        const { data: newAnnotator, error: insertError } = await supabase
           .from('annotators')
-          .insert({ id: user.id, email: user.email })
+          .insert({ 
+            id: user.id, 
+            email: user.email 
+          })
           .select()
           .single();
         
         if (insertError) {
+          console.log('Error creating annotator:', insertError);
           handleError('Could not create your user profile. Please contact support.', insertError);
           return null;
         }
@@ -94,12 +123,11 @@ export const useEvaluator = () => {
         console.log('Successfully created annotator profile.');
       }
 
-      // If the annotator doesn't have a block number, assign one.
       if (annotator && annotator.block_number === null) {
         console.log(`Annotator ${user.email} needs a task block. Assigning one...`);
         const nextBlock = await getNextBlockNumber();
         
-        const { data: updatedAnnotator, error: updateError } = await (supabase as any)
+        const { data: updatedAnnotator, error: updateError } = await supabase
           .from('annotators')
           .update({ block_number: nextBlock })
           .eq('id', user.id)
@@ -108,7 +136,7 @@ export const useEvaluator = () => {
 
         if (updateError) {
           handleError('Failed to assign a task block. Please try again.', updateError);
-          return null; // or return the annotator without a block
+          return annotator;
         }
 
         console.log(`Assigned block ${nextBlock} to ${user.email}.`);
@@ -123,11 +151,10 @@ export const useEvaluator = () => {
     }
   }, [handleError]);
 
-  const loadUserAndProgress = useCallback(async (user: User, allTasks: Task[]) => {
+  const loadUserAndProgress = useCallback(async (user: User, trainingTasks: Task[], evaluationTasks: Task[]) => {
     const annotatorProfile = await getOrCreateAnnotator(user);
     if (!annotatorProfile) return;
 
-    // New: Determine the task slice for this annotator
     const blockNumber = annotatorProfile.block_number;
     const blockSize = 20;
     
@@ -138,17 +165,24 @@ export const useEvaluator = () => {
 
     const startIndex = blockNumber * blockSize;
     const endIndex = startIndex + blockSize;
-    const assignedTasks = allTasks.slice(startIndex, endIndex);
+    const assignedEvaluationTasks = evaluationTasks.slice(startIndex, endIndex);
 
-    if (assignedTasks.length === 0) {
-      // This can happen if the block number is too high for the number of tasks
-      console.warn(`No tasks found for block ${blockNumber}. The user might have completed all available tasks or the block is out of bounds.`);
+    if (assignedEvaluationTasks.length === 0) {
+      console.warn(`No evaluation tasks found for block ${blockNumber}.`);
       setState(prev => ({ ...prev, status: 'complete', annotator: annotatorProfile, user }));
       return;
     }
 
     if (!annotatorProfile.expertise_group) {
-      setState(prev => ({ ...prev, status: 'needs_survey', annotator: annotatorProfile, user, assignedTasks }));
+      setState(prev => ({ 
+        ...prev, 
+        status: 'needs_survey', 
+        annotator: annotatorProfile, 
+        user, 
+        assignedTasks: assignedEvaluationTasks,
+        allTrainingTasks: trainingTasks,
+        allEvaluationTasks: evaluationTasks
+      }));
       return;
     }
 
@@ -160,30 +194,65 @@ export const useEvaluator = () => {
 
       if (error) throw error;
 
-      const completedIds = new Set(evaluations.map(e => e.task_id));
-      const nextTask = assignedTasks.find(t => !completedIds.has(t.taskId)) || null;
+      const trainingEvaluations = evaluations?.filter(e => 
+        trainingTasks.some(t => t.taskId.toString() === e.task_id?.toString())
+      ) || [];
+      
+      const mainEvaluations = evaluations?.filter(e => 
+        assignedEvaluationTasks.some(t => t.taskId.toString() === e.task_id?.toString())
+      ) || [];
 
-      setState(prev => ({
-        ...prev,
-        assignedTasks: assignedTasks,
-        annotator: annotatorProfile,
-        completedEvaluations: evaluations || [],
-        status: nextTask ? 'evaluating' : 'complete',
-        currentTask: nextTask,
-        progress: { current: completedIds.size, total: assignedTasks.length },
-        user,
-      }));
+      // Check if user needs to complete training
+      const shouldDoTraining = trainingTasks.length > 0 && trainingEvaluations.length < trainingTasks.length;
+      
+      if (shouldDoTraining) {
+        const completedTrainingIds = new Set(trainingEvaluations.map(e => e.task_id?.toString()));
+        const nextTrainingTask = trainingTasks.find(t => !completedTrainingIds.has(t.taskId.toString())) || null;
+        
+        setState(prev => ({
+          ...prev,
+          allTrainingTasks: trainingTasks,
+          allEvaluationTasks: evaluationTasks,
+          assignedTasks: assignedEvaluationTasks,
+          annotator: annotatorProfile,
+          completedEvaluations: evaluations || [],
+          status: 'training',
+          currentTask: nextTrainingTask,
+          isInTrainingMode: true,
+          trainingProgress: { current: trainingEvaluations.length, total: trainingTasks.length },
+          progress: { current: mainEvaluations.length, total: assignedEvaluationTasks.length },
+          user,
+        }));
+      } else {
+        // Proceed to main evaluation
+        const completedIds = new Set(mainEvaluations.map(e => e.task_id?.toString()));
+        const nextTask = assignedEvaluationTasks.find(t => !completedIds.has(t.taskId.toString())) || null;
+
+        setState(prev => ({
+          ...prev,
+          allTrainingTasks: trainingTasks,
+          allEvaluationTasks: evaluationTasks,
+          assignedTasks: assignedEvaluationTasks,
+          annotator: annotatorProfile,
+          completedEvaluations: evaluations || [],
+          status: nextTask ? 'evaluating' : 'complete',
+          currentTask: nextTask,
+          isInTrainingMode: false,
+          trainingProgress: { current: trainingEvaluations.length, total: trainingTasks.length },
+          progress: { current: mainEvaluations.length, total: assignedEvaluationTasks.length },
+          user,
+        }));
+      }
     } catch (error) {
       handleError('Failed to load your evaluation progress.', error);
     }
   }, [getOrCreateAnnotator, handleError]);
   
-  // Main effect to drive the logic
   useEffect(() => {
     if (user) {
-      loadTasks().then(allTasks => {
-        if (allTasks.length > 0) {
-          loadUserAndProgress(user, allTasks);
+      loadTasks().then(({ trainingTasks, evaluationTasks }) => {
+        if (evaluationTasks.length > 0 || trainingTasks.length > 0) {
+          loadUserAndProgress(user, trainingTasks, evaluationTasks);
         }
       });
     } else {
@@ -192,7 +261,7 @@ export const useEvaluator = () => {
   }, [user, loadTasks, loadUserAndProgress]);
 
   const submitEvaluation = async (scores: { scoreA: number; scoreB: number }) => {
-    if (!state.annotator || !state.currentTask || state.status !== 'evaluating') return;
+    if (!state.annotator || !state.currentTask) return;
 
     try {
       const newEvaluation: Omit<Evaluation, 'id' | 'created_at'> = {
@@ -200,7 +269,7 @@ export const useEvaluator = () => {
         task_id: state.currentTask.taskId,
         score_a: scores.scoreA,
         score_b: scores.scoreB,
-        session_start_time: new Date().toISOString(), // This could be managed better
+        session_start_time: new Date().toISOString(),
         evaluation_end_time: new Date().toISOString(),
       };
       
@@ -214,19 +283,59 @@ export const useEvaluator = () => {
       
       toast.success('Progress saved!');
 
-      // Manually update state to reflect the new submission
       setState(prev => {
         const updatedEvaluations = [...prev.completedEvaluations, data];
-        const completedIds = new Set(updatedEvaluations.map(e => e.task_id));
-        const nextTask = prev.assignedTasks.find(t => !completedIds.has(t.taskId)) || null;
         
-        return {
-          ...prev,
-          completedEvaluations: updatedEvaluations,
-          currentTask: nextTask,
-          status: nextTask ? 'evaluating' : 'complete',
-          progress: { current: completedIds.size, total: prev.assignedTasks.length },
-        };
+        if (prev.isInTrainingMode) {
+          // Handle training progression
+          const trainingEvaluations = updatedEvaluations.filter(e => 
+            prev.allTrainingTasks.some(t => t.taskId.toString() === e.task_id?.toString())
+          );
+          
+          const completedTrainingIds = new Set(trainingEvaluations.map(e => e.task_id?.toString()));
+          const nextTrainingTask = prev.allTrainingTasks.find(t => !completedTrainingIds.has(t.taskId.toString())) || null;
+          
+          if (nextTrainingTask) {
+            return {
+              ...prev,
+              completedEvaluations: updatedEvaluations,
+              currentTask: nextTrainingTask,
+              trainingProgress: { current: trainingEvaluations.length, total: prev.allTrainingTasks.length },
+            };
+          } else {
+            // Training complete, move to main evaluation
+            const mainEvaluations = updatedEvaluations.filter(e => 
+              prev.assignedTasks.some(t => t.taskId.toString() === e.task_id?.toString())
+            );
+            const completedMainIds = new Set(mainEvaluations.map(e => e.task_id?.toString()));
+            const nextMainTask = prev.assignedTasks.find(t => !completedMainIds.has(t.taskId.toString())) || null;
+            
+            return {
+              ...prev,
+              completedEvaluations: updatedEvaluations,
+              currentTask: nextMainTask,
+              status: nextMainTask ? 'evaluating' : 'complete',
+              isInTrainingMode: false,
+              trainingProgress: { current: trainingEvaluations.length, total: prev.allTrainingTasks.length },
+              progress: { current: mainEvaluations.length, total: prev.assignedTasks.length },
+            };
+          }
+        } else {
+          // Handle main evaluation progression
+          const mainEvaluations = updatedEvaluations.filter(e => 
+            prev.assignedTasks.some(t => t.taskId.toString() === e.task_id?.toString())
+          );
+          const completedIds = new Set(mainEvaluations.map(e => e.task_id?.toString()));
+          const nextTask = prev.assignedTasks.find(t => !completedIds.has(t.taskId.toString())) || null;
+          
+          return {
+            ...prev,
+            completedEvaluations: updatedEvaluations,
+            currentTask: nextTask,
+            status: nextTask ? 'evaluating' : 'complete',
+            progress: { current: mainEvaluations.length, total: prev.assignedTasks.length },
+          };
+        }
       });
 
     } catch (error) {
@@ -249,9 +358,8 @@ export const useEvaluator = () => {
 
       toast.success('Thank you! Your profile is updated.');
       
-      // Reload progress
       if (user) {
-        loadUserAndProgress(user, state.allTasks);
+        loadUserAndProgress(user, state.allTrainingTasks, state.allEvaluationTasks);
       }
 
     } catch (error) {
@@ -260,4 +368,4 @@ export const useEvaluator = () => {
   };
 
   return { ...state, submitEvaluation, submitBackgroundSurvey };
-}; 
+};
