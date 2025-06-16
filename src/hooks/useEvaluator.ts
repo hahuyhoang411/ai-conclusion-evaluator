@@ -61,6 +61,8 @@ export const useEvaluator = () => {
       if (!response.ok) throw new Error('Failed to fetch tasks.json');
       const tasksData = await response.json();
       
+      console.log('Raw tasks data:', tasksData);
+      
       // Handle both old and new format
       let trainingTasks: Task[] = [];
       let evaluationTasks: Task[] = [];
@@ -73,6 +75,9 @@ export const useEvaluator = () => {
         trainingTasks = tasksData.trainingTasks.map(task => ({ ...task, isTraining: true }));
         evaluationTasks = tasksData.evaluationTasks.map(task => ({ ...task, isTraining: false }));
       }
+      
+      console.log('Parsed training tasks:', trainingTasks.length, trainingTasks);
+      console.log('Parsed evaluation tasks:', evaluationTasks.length, evaluationTasks);
       
       setState(prev => ({ 
         ...prev, 
@@ -151,6 +156,11 @@ export const useEvaluator = () => {
   }, [handleError]);
 
   const loadUserAndProgress = useCallback(async (user: User, trainingTasks: Task[], evaluationTasks: Task[]) => {
+    console.log('Loading user progress with:', {
+      trainingTasksCount: trainingTasks.length,
+      evaluationTasksCount: evaluationTasks.length
+    });
+
     const annotatorProfile = await getOrCreateAnnotator(user);
     if (!annotatorProfile) return;
 
@@ -193,6 +203,8 @@ export const useEvaluator = () => {
 
       if (error) throw error;
 
+      console.log('All evaluations for user:', evaluations);
+
       const trainingEvaluations = evaluations?.filter(e => 
         trainingTasks.some(t => t.taskId.toString() === e.task_id?.toString())
       ) || [];
@@ -201,12 +213,22 @@ export const useEvaluator = () => {
         assignedEvaluationTasks.some(t => t.taskId.toString() === e.task_id?.toString())
       ) || [];
 
-      // Check if user needs to complete training
+      console.log('Training evaluations found:', trainingEvaluations.length);
+      console.log('Main evaluations found:', mainEvaluations.length);
+
+      // Check if user needs to complete training - FORCE training if we have training tasks
       const shouldDoTraining = trainingTasks.length > 0 && trainingEvaluations.length < trainingTasks.length;
+      
+      console.log('Should do training?', shouldDoTraining, {
+        trainingTasksLength: trainingTasks.length,
+        trainingEvaluationsLength: trainingEvaluations.length
+      });
       
       if (shouldDoTraining) {
         const completedTrainingIds = new Set(trainingEvaluations.map(e => e.task_id?.toString()));
         const nextTrainingTask = trainingTasks.find(t => !completedTrainingIds.has(t.taskId.toString())) || null;
+        
+        console.log('Setting up training mode, next task:', nextTrainingTask);
         
         setState(prev => ({
           ...prev,
@@ -226,6 +248,8 @@ export const useEvaluator = () => {
         // Proceed to main evaluation
         const completedIds = new Set(mainEvaluations.map(e => e.task_id?.toString()));
         const nextTask = assignedEvaluationTasks.find(t => !completedIds.has(t.taskId.toString())) || null;
+
+        console.log('Setting up evaluation mode, next task:', nextTask);
 
         setState(prev => ({
           ...prev,
