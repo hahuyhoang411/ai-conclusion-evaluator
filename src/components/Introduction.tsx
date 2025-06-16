@@ -20,6 +20,9 @@ const Introduction = () => {
         <p>
           Please note that you may see the same Reference Conclusion multiple times, but with different AI-generated conclusions.
         </p>
+        <p>
+        If the model outputs contain more information than the reference, you may need to verify the statistics using the source abstracts. If the statistics are incorrect, consider assigning a lower score to the conclusion. However, the main goal is to compare the key findings between the reference conclusion and the AI-generated conclusions.
+        </p>
       </CardContent>
     </Card>
   );
