@@ -7,6 +7,7 @@ import { Label } from '@/components/ui/label';
 import { Task } from '@/types/evaluation';
 import { Eye, EyeOff, GraduationCap } from 'lucide-react';
 import TaskTimer from './TaskTimer';
+import MarkdownRenderer from './MarkdownRenderer';
 
 interface TaskEvaluationProps {
   task: Task;
@@ -120,7 +121,7 @@ const TaskEvaluation: React.FC<TaskEvaluationProps> = ({
               {task.sourceAbstracts.map((abstract, index) => (
                 <div key={index} className="p-3 bg-gray-50 rounded-lg">
                   <div className="text-gray-800 prose prose-sm max-w-none">
-                    <ReactMarkdown>{abstract}</ReactMarkdown>
+                    <MarkdownRenderer content={abstract} />
                   </div>
                 </div>
               ))}
