@@ -1,29 +1,85 @@
-
-[
-  {
-    "taskId": 1,
-    "sourceAbstracts": [
-      "Abstract 1 Text: Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed non risus. Suspendisse lectus tortor, dignissim sit amet, adipiscing nec, ultricies sed, dolor.",
-      "Abstract 2 Text: Cras elementum ultrices diam. Maecenas ligula massa, varius a, semper congue, euismod non, mi. Proin porttitor, orci nec nonummy molestie, enim est eleifend mi, non fermentum diam nisl sit amet erat.",
-      "Abstract 3 Text: Duis ac turpis. Integer rutrum ante eu lacus. Quisque nulla. Vestibulum libero nisl, porta vel, scelerisque eget, malesuada at, neque."
-    ],
-    "referenceConclusion": "The meta-analysis of these studies indicates a significant positive effect, with a combined odds ratio of 2.5 (95% CI, 1.8-3.2). However, significant heterogeneity was observed (I² = 78%), suggesting caution in interpretation. Future research should focus on stratified populations.",
-    "modelOutputs": {
-      "conclusionA": "Based on the abstracts, there is a strong positive effect. The odds ratio is 2.5. The confidence interval is 1.8 to 3.2. There was a lot of heterogeneity.",
-      "conclusionB": "A comprehensive review of the provided abstracts suggests a statistically significant positive effect. Key limitations include the high heterogeneity across studies, which necessitates cautious interpretation of the results."
+{
+  "trainingTasks": [
+    {
+      "taskId": "train_1",
+      "sourcePaperId": 35280900,
+      "referenceConclusion": "In conclusion, this meta-analysis suggested that a higher dose of rifampin could significantly increase the pharmacokinetic parameters containing plasma and CSF concentration and the plasma AUC 0−24 , without a remarkable increase of adverse reactions. This phenomenon may indicate the idea that the crucial drug in the antituberculosis regimen was used in a low dose, more studies are required to shed light on this question. However, we found that there was no improvement in the treatment outcome. In terms of efficacy, more work will need to be done, especially large sample size phase III studies to determine the effect of an intensified regimen including a higher dose of rifampin.",
+      "sourceAbstracts": [
+        "# Title: Intensified …"
+      ],
+      "modelOutputs": {
+        "conclusionA": "**Primary …",
+        "conclusionB": "Increasing …"
+      },
+      "modelIdentities": {
+        "modelA": "MedGemma Target Conclusion",
+        "modelB": "Gemma Target Conclusion"
+      },
+      "correctScores": {
+        "modelA_score": 4.333333333333333,
+        "modelB_score": 2.0
+      },
+      "isTraining": true
+    },
+    {
+      "taskId": "train_2",
+      "sourcePaperId": 34922383,
+      "referenceConclusion": "This ITC demonstrated significantly greater reductions from baseline in HbA 1c and body weight with semaglutide 2.0 mg vs dulaglutide 3.0 mg and 4.5 mg. The findings of this study provide important comparative effectiveness information until randomized head-to-head studies become available. This ITC demonstrated significantly greater reductions from baseline in HbA 1c and body weight with semaglutide 2.0 mg vs dulaglutide 3.0 mg and 4.5 mg. The findings of this study, and particularly the results provided in different trial populations, provide important comparative effectiveness information until randomized head-to-head studies become available.",
+      "sourceAbstracts": [
+        "# Title: Semaglutide versus dulaglutide once weekly in patients with type 2 diabetes (SUSTAIN 7): a randomised, open-label, phase 3b trial.\n# Abstract: Despite common mechanisms of actions, glucagon-like peptide-1 receptor agonists differ in structure, pharmacokinetic profile, and clinical effects. This head-to-head trial compared semaglutide with dulaglutide in patients with inadequately controlled type 2 diabetes.",
+        "# Title: Efficacy and Safety of Dulaglutide 3.0 mg and 4.5 mg Versus Dulaglutide 1.5 mg in Metformin-Treated Patients With Type 2 Diabetes in a Randomized Controlled Trial (AWARD-11).\n# Abstract: To compare efficacy and safety of dulaglutide at doses of 3.0 and 4.5 mg versus 1.5 mg in patients with type 2 diabetes inadequately controlled with metformin.",
+      ],
+      "modelOutputs": {
+        "conclusionA": "**Primary …",
+        "conclusionB": "Semaglutide…"
+      },
+      "modelIdentities": {
+        "modelA": "MedGemma Target Conclusion",
+        "modelB": "Gemma Target Conclusion"
+      },
+      "correctScores": {
+        "modelA_score": 2.6666666666666665,
+        "modelB_score": 2.6666666666666665
+      },
+      "isTraining": true
     }
-  },
-  {
-    "taskId": 2,
-    "sourceAbstracts": [
-      "Abstract 1: A randomized controlled trial examining the efficacy of intervention X showed significant improvement in primary outcomes (p<0.001) among participants aged 18-65.",
-      "Abstract 2: Secondary analysis revealed that the intervention was particularly effective in subgroup Y, with effect sizes ranging from moderate to large (Cohen's d = 0.6-1.2).",
-      "Abstract 3: Long-term follow-up at 12 months demonstrated sustained benefits, though some participants experienced mild side effects that resolved within 2 weeks."
-    ],
-    "referenceConclusion": "The intervention demonstrates robust efficacy across multiple outcomes with sustained long-term benefits. While generally well-tolerated, clinicians should monitor for transient side effects during initial treatment phases. The intervention shows particular promise for subgroup Y populations.",
-    "modelOutputs": {
-      "conclusionA": "The intervention works well and has long-term benefits. There are some side effects but they go away quickly. It works especially well for certain groups of people.",
-      "conclusionB": "Evidence supports the intervention's effectiveness with significant primary outcome improvements (p<0.001). Notable efficacy in subgroup Y with moderate to large effect sizes. Sustained 12-month benefits observed, with mild, self-resolving side effects reported."
+  ],
+  "evaluationTasks": [
+    {
+      "sourcePaperId": 40081887,
+      "referenceConclusion": "L. lactis is suitable as a vector carrier for oral or nasal mucosal vaccines for bacterial and viral infections. L. lactis -based vaccine can induce cellular and humoral immune responses that protect against these infections. Research related to L. lactis as a mucosal vaccine carrier has great potential to continue to be carried out and developed.",
+      "sourceAbstracts": [
+        "# Title: Express …",
+        "# Title: Oral immunization with…"
+      ],
+      "modelOutputs": {
+        "conclusionA": "Oral …",
+        "conclusionB": "*Lactococcus lactis* …"
+      },
+      "modelIdentities": {
+        "modelA": "Gemma Target Conclusion",
+        "modelB": "Gemma Direct Conclusion"
+      },
+      "isTraining": false,
+      "taskId": 1
+    },
+    {
+      "sourcePaperId": 39908064,
+      "referenceConclusion": "In conclusion, children/adolescents with CKD were more likely to have significant cardiorespiratory deficits than healthy controls. Our findings have implications for the development of non-pharmacological therapies targeted at increasing aerobic performance levels, and importantly, it may be beneficial to increase exercise instruction in children/adolescents with CKD.",
+      "sourceAbstracts": [
+        "# Title: Exercise training in ",
+        "# Title: A pilot study ..."
+      ],
+      "modelOutputs": {
+        "conclusionA": "Exercise …",
+        "conclusionB": "Children …"
+      },
+      "modelIdentities": {
+        "modelA": "Gemma Target Conclusion",
+        "modelB": "Gemma Direct Conclusion"
+      },
+      "isTraining": false,
+      "taskId": 2
     }
-  }
-]
+  ]
+}

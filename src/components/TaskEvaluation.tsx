@@ -151,12 +151,12 @@ const TaskEvaluation: React.FC<TaskEvaluationProps> = ({
                 <div className="grid md:grid-cols-2 gap-4">
                   <div className="p-3 bg-white rounded-lg border">
                     <p className="font-medium text-green-700">
-                      {task.modelIdentities?.modelA || 'Model A'} Score: {task.correctScores.modelA_score.toFixed(2)}
+                      Conclusion 1 Score: {task.correctScores.modelA_score.toFixed(2)}
                     </p>
                   </div>
                   <div className="p-3 bg-white rounded-lg border">
                     <p className="font-medium text-purple-700">
-                      {task.modelIdentities?.modelB || 'Model B'} Score: {task.correctScores.modelB_score.toFixed(2)}
+                      Conclusion 2 Score: {task.correctScores.modelB_score.toFixed(2)}
                     </p>
                   </div>
                 </div>
@@ -173,7 +173,7 @@ const TaskEvaluation: React.FC<TaskEvaluationProps> = ({
           <Card>
             <CardHeader>
               <CardTitle className="text-lg font-semibold text-green-700">
-                {task.modelIdentities?.modelA || 'Conclusion A'}
+                Conclusion 1
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
@@ -183,7 +183,7 @@ const TaskEvaluation: React.FC<TaskEvaluationProps> = ({
               
               <div>
                 <Label className="text-sm font-medium text-gray-700 mb-2 block">
-                  Score for {task.modelIdentities?.modelA || 'Conclusion A'}:
+                  Score for Conclusion 1:
                 </Label>
                 <RadioGroup value={scoreA} onValueChange={setScoreA} className="space-y-2">
                   {scoreOptions.map((option) => (
@@ -203,7 +203,7 @@ const TaskEvaluation: React.FC<TaskEvaluationProps> = ({
           <Card>
             <CardHeader>
               <CardTitle className="text-lg font-semibold text-purple-700">
-                {task.modelIdentities?.modelB || 'Conclusion B'}
+                Conclusion 2
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
@@ -213,7 +213,7 @@ const TaskEvaluation: React.FC<TaskEvaluationProps> = ({
               
               <div>
                 <Label className="text-sm font-medium text-gray-700 mb-2 block">
-                  Score for {task.modelIdentities?.modelB || 'Conclusion B'}:
+                  Score for Conclusion 2:
                 </Label>
                 <RadioGroup value={scoreB} onValueChange={setScoreB} className="space-y-2">
                   {scoreOptions.map((option) => (
