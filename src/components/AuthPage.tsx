@@ -1,14 +1,16 @@
-
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from 'sonner';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Label } from '@/components/ui/label';
 
 const AuthPage = () => {
   const [email, setEmail] = useState('');
   const [loading, setLoading] = useState(false);
+  const [hasCommitted, setHasCommitted] = useState(false);
   const { signInWithMagicLink } = useAuth();
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -52,10 +54,16 @@ const AuthPage = () => {
                 className="w-full"
               />
             </div>
+            <div className="flex items-center space-x-2">
+              <Checkbox id="commitment" checked={hasCommitted} onCheckedChange={(checked) => setHasCommitted(checked as boolean)} />
+              <Label htmlFor="commitment" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
+                I commit to finishing all assigned evaluation tasks to the best of my ability.
+              </Label>
+            </div>
             <Button 
               type="submit" 
               className="w-full" 
-              disabled={loading}
+              disabled={loading || !hasCommitted}
             >
               {loading ? 'Sending...' : 'Begin Evaluation'}
             </Button>
