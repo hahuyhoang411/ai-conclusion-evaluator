@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
@@ -264,9 +263,14 @@ export const useEvaluator = () => {
     if (!state.annotator || !state.currentTask) return;
 
     try {
-      const newEvaluation: Omit<Evaluation, 'id' | 'created_at'> = {
+      // Convert taskId to number to ensure compatibility with database schema
+      const taskIdAsNumber = typeof state.currentTask.taskId === 'string' 
+        ? parseInt(state.currentTask.taskId, 10) 
+        : state.currentTask.taskId;
+
+      const newEvaluation = {
         annotator_id: state.annotator.id,
-        task_id: state.currentTask.taskId,
+        task_id: taskIdAsNumber,
         score_a: scores.scoreA,
         score_b: scores.scoreB,
         session_start_time: new Date().toISOString(),
