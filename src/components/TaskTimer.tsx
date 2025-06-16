@@ -41,8 +41,8 @@ const TaskTimer: React.FC<TaskTimerProps> = ({ isActive, onTimeUpdate }) => {
   };
 
   return (
-    <div className="flex items-center gap-2 text-sm text-gray-600 bg-gray-50 px-3 py-2 rounded-lg">
-      <Clock size={16} />
+    <div className="fixed top-4 right-4 z-50 flex items-center gap-2 text-sm font-semibold text-white bg-blue-600 shadow-lg px-4 py-3 rounded-lg border-2 border-blue-700">
+      <Clock size={18} className="text-blue-100" />
       <span>Time: {formatTime(seconds)}</span>
     </div>
   );

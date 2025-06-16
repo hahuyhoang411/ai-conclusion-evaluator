@@ -60,19 +60,30 @@ const TaskEvaluation: React.FC<TaskEvaluationProps> = ({
     return task.metaAnalysisName || 'Meta Analysis';
   };
 
+  const parseAbstract = (abstract: string) => {
+    // Split by "Title:" and "Abstract:" to separate them
+    const titleMatch = abstract.match(/Title:\s*(.*?)(?=\s*Abstract:|$)/s);
+    const abstractMatch = abstract.match(/Abstract:\s*(.*)/s);
+    
+    return {
+      title: titleMatch ? titleMatch[1].trim() : '',
+      content: abstractMatch ? abstractMatch[1].trim() : abstract
+    };
+  };
+
   return (
     <div className="space-y-6">
+      {/* Sticky Timer for evaluation tasks only */}
+      {!isTraining && <TaskTimer isActive={true} />}
+
       {/* Progress Tracker */}
       <div className="bg-white p-4 rounded-lg shadow-sm border">
         <div className="flex justify-between items-center">
           <h2 className="text-xl font-semibold">
             {isTraining ? 'Training' : 'Task'} {currentTaskIndex + 1} of {totalTasks}
           </h2>
-          <div className="flex items-center gap-4">
-            {!isTraining && <TaskTimer isActive={true} />}
-            <div className="text-sm text-gray-600">
-              Progress: {Math.round(((currentTaskIndex + 1) / totalTasks) * 100)}%
-            </div>
+          <div className="text-sm text-gray-600">
+            Progress: {Math.round(((currentTaskIndex + 1) / totalTasks) * 100)}%
           </div>
         </div>
         <div className="mt-2 w-full bg-gray-200 rounded-full h-2">
@@ -117,14 +128,24 @@ const TaskEvaluation: React.FC<TaskEvaluationProps> = ({
             <CardHeader>
               <CardTitle className="text-lg font-semibold">Source Abstracts</CardTitle>
             </CardHeader>
-            <CardContent className="space-y-4">
-              {task.sourceAbstracts.map((abstract, index) => (
-                <div key={index} className="p-3 bg-gray-50 rounded-lg">
-                  <div className="text-gray-800 prose prose-sm max-w-none">
-                    <ReactMarkdown>{abstract}</ReactMarkdown>
+            <CardContent className="space-y-6">
+              {task.sourceAbstracts.map((abstract, index) => {
+                const parsed = parseAbstract(abstract);
+                return (
+                  <div key={index} className="p-4 bg-gray-50 rounded-lg border">
+                    {parsed.title && (
+                      <div className="mb-3">
+                        <h4 className="font-bold text-gray-900 text-base leading-relaxed">
+                          {parsed.title}
+                        </h4>
+                      </div>
+                    )}
+                    <div className="text-gray-800 leading-relaxed">
+                      {parsed.content}
+                    </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </CardContent>
           </Card>
         )}
