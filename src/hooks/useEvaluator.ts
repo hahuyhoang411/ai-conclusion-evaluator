@@ -9,7 +9,7 @@ interface Progress {
 }
 
 interface EvaluatorState {
-  status: 'initializing' | 'loading_tasks' | 'needs_survey' | 'training' | 'evaluating' | 'complete' | 'error';
+  status: 'initializing' | 'loading_tasks' | 'training' | 'evaluating' | 'complete' | 'error';
   error: string | null;
   currentTask: Task | null;
   progress: Progress;
@@ -222,7 +222,7 @@ export const useEvaluator = () => {
 
       const evaluation: Omit<Evaluation, 'id' | 'created_at'> = {
         annotator_id: user.id,
-        task_id: parseInt(state.currentTask.taskId.toString()),
+        task_id: Number(state.currentTask.taskId),
         score_a: scores.scoreA,
         score_b: scores.scoreB,
         session_start_time: new Date().toISOString(),
