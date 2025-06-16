@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
@@ -18,6 +19,8 @@ type EvaluatorState = {
   isInTrainingMode: boolean;
   error: string | null;
   user: User | null;
+  // Local training progress (not stored in database)
+  completedTrainingTaskIds: Set<string>;
 };
 
 export const useEvaluator = () => {
@@ -35,6 +38,7 @@ export const useEvaluator = () => {
     isInTrainingMode: false,
     error: null,
     user: null,
+    completedTrainingTaskIds: new Set(),
   });
 
   const handleError = useCallback((message: string, error?: any) => {
@@ -205,28 +209,21 @@ export const useEvaluator = () => {
 
       console.log('All evaluations for user:', evaluations);
 
-      const trainingEvaluations = evaluations?.filter(e => 
-        trainingTasks.some(t => t.taskId.toString() === e.task_id?.toString())
-      ) || [];
-      
       const mainEvaluations = evaluations?.filter(e => 
         assignedEvaluationTasks.some(t => t.taskId.toString() === e.task_id?.toString())
       ) || [];
 
-      console.log('Training evaluations found:', trainingEvaluations.length);
       console.log('Main evaluations found:', mainEvaluations.length);
 
       // Check if user needs to complete training - FORCE training if we have training tasks
-      const shouldDoTraining = trainingTasks.length > 0 && trainingEvaluations.length < trainingTasks.length;
+      const shouldDoTraining = trainingTasks.length > 0;
       
       console.log('Should do training?', shouldDoTraining, {
-        trainingTasksLength: trainingTasks.length,
-        trainingEvaluationsLength: trainingEvaluations.length
+        trainingTasksLength: trainingTasks.length
       });
       
       if (shouldDoTraining) {
-        const completedTrainingIds = new Set(trainingEvaluations.map(e => e.task_id?.toString()));
-        const nextTrainingTask = trainingTasks.find(t => !completedTrainingIds.has(t.taskId.toString())) || null;
+        const nextTrainingTask = trainingTasks[0] || null;
         
         console.log('Setting up training mode, next task:', nextTrainingTask);
         
@@ -240,9 +237,10 @@ export const useEvaluator = () => {
           status: 'training',
           currentTask: nextTrainingTask,
           isInTrainingMode: true,
-          trainingProgress: { current: trainingEvaluations.length, total: trainingTasks.length },
+          trainingProgress: { current: 0, total: trainingTasks.length },
           progress: { current: mainEvaluations.length, total: assignedEvaluationTasks.length },
           user,
+          completedTrainingTaskIds: new Set(),
         }));
       } else {
         // Proceed to main evaluation
@@ -261,7 +259,7 @@ export const useEvaluator = () => {
           status: nextTask ? 'evaluating' : 'complete',
           currentTask: nextTask,
           isInTrainingMode: false,
-          trainingProgress: { current: trainingEvaluations.length, total: trainingTasks.length },
+          trainingProgress: { current: 0, total: trainingTasks.length },
           progress: { current: mainEvaluations.length, total: assignedEvaluationTasks.length },
           user,
         }));
@@ -286,8 +284,51 @@ export const useEvaluator = () => {
   const submitEvaluation = async (scores: { scoreA: number; scoreB: number }) => {
     if (!state.annotator || !state.currentTask) return;
 
+    if (state.isInTrainingMode) {
+      // Handle training progression locally (no database storage)
+      const currentTaskId = state.currentTask.taskId.toString();
+      const newCompletedTrainingIds = new Set(state.completedTrainingTaskIds);
+      newCompletedTrainingIds.add(currentTaskId);
+      
+      const nextTrainingTask = state.allTrainingTasks.find(t => 
+        !newCompletedTrainingIds.has(t.taskId.toString())
+      ) || null;
+      
+      if (nextTrainingTask) {
+        // Continue with training
+        setState(prev => ({
+          ...prev,
+          completedTrainingTaskIds: newCompletedTrainingIds,
+          currentTask: nextTrainingTask,
+          trainingProgress: { 
+            current: newCompletedTrainingIds.size, 
+            total: prev.allTrainingTasks.length 
+          },
+        }));
+        toast.success('Training progress saved!');
+      } else {
+        // Training complete, move to main evaluation
+        const mainEvaluations = state.completedEvaluations.filter(e => 
+          state.assignedTasks.some(t => t.taskId.toString() === e.task_id?.toString())
+        );
+        const completedMainIds = new Set(mainEvaluations.map(e => e.task_id?.toString()));
+        const nextMainTask = state.assignedTasks.find(t => !completedMainIds.has(t.taskId.toString())) || null;
+        
+        setState(prev => ({
+          ...prev,
+          completedTrainingTaskIds: newCompletedTrainingIds,
+          currentTask: nextMainTask,
+          status: nextMainTask ? 'evaluating' : 'complete',
+          isInTrainingMode: false,
+          trainingProgress: { current: newCompletedTrainingIds.size, total: prev.allTrainingTasks.length },
+        }));
+        toast.success('Training completed! Starting evaluation tasks.');
+      }
+      return;
+    }
+
+    // Handle main evaluation (store in database)
     try {
-      // Convert taskId to number to ensure compatibility with database schema
       const taskIdAsNumber = typeof state.currentTask.taskId === 'string' 
         ? parseInt(state.currentTask.taskId, 10) 
         : state.currentTask.taskId;
@@ -313,57 +354,19 @@ export const useEvaluator = () => {
 
       setState(prev => {
         const updatedEvaluations = [...prev.completedEvaluations, data];
+        const mainEvaluations = updatedEvaluations.filter(e => 
+          prev.assignedTasks.some(t => t.taskId.toString() === e.task_id?.toString())
+        );
+        const completedIds = new Set(mainEvaluations.map(e => e.task_id?.toString()));
+        const nextTask = prev.assignedTasks.find(t => !completedIds.has(t.taskId.toString())) || null;
         
-        if (prev.isInTrainingMode) {
-          // Handle training progression
-          const trainingEvaluations = updatedEvaluations.filter(e => 
-            prev.allTrainingTasks.some(t => t.taskId.toString() === e.task_id?.toString())
-          );
-          
-          const completedTrainingIds = new Set(trainingEvaluations.map(e => e.task_id?.toString()));
-          const nextTrainingTask = prev.allTrainingTasks.find(t => !completedTrainingIds.has(t.taskId.toString())) || null;
-          
-          if (nextTrainingTask) {
-            return {
-              ...prev,
-              completedEvaluations: updatedEvaluations,
-              currentTask: nextTrainingTask,
-              trainingProgress: { current: trainingEvaluations.length, total: prev.allTrainingTasks.length },
-            };
-          } else {
-            // Training complete, move to main evaluation
-            const mainEvaluations = updatedEvaluations.filter(e => 
-              prev.assignedTasks.some(t => t.taskId.toString() === e.task_id?.toString())
-            );
-            const completedMainIds = new Set(mainEvaluations.map(e => e.task_id?.toString()));
-            const nextMainTask = prev.assignedTasks.find(t => !completedMainIds.has(t.taskId.toString())) || null;
-            
-            return {
-              ...prev,
-              completedEvaluations: updatedEvaluations,
-              currentTask: nextMainTask,
-              status: nextMainTask ? 'evaluating' : 'complete',
-              isInTrainingMode: false,
-              trainingProgress: { current: trainingEvaluations.length, total: prev.allTrainingTasks.length },
-              progress: { current: mainEvaluations.length, total: prev.assignedTasks.length },
-            };
-          }
-        } else {
-          // Handle main evaluation progression
-          const mainEvaluations = updatedEvaluations.filter(e => 
-            prev.assignedTasks.some(t => t.taskId.toString() === e.task_id?.toString())
-          );
-          const completedIds = new Set(mainEvaluations.map(e => e.task_id?.toString()));
-          const nextTask = prev.assignedTasks.find(t => !completedIds.has(t.taskId.toString())) || null;
-          
-          return {
-            ...prev,
-            completedEvaluations: updatedEvaluations,
-            currentTask: nextTask,
-            status: nextTask ? 'evaluating' : 'complete',
-            progress: { current: mainEvaluations.length, total: prev.assignedTasks.length },
-          };
-        }
+        return {
+          ...prev,
+          completedEvaluations: updatedEvaluations,
+          currentTask: nextTask,
+          status: nextTask ? 'evaluating' : 'complete',
+          progress: { current: mainEvaluations.length, total: prev.assignedTasks.length },
+        };
       });
 
     } catch (error) {

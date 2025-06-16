@@ -1,11 +1,13 @@
 
 import React, { useState } from 'react';
+import ReactMarkdown from 'react-markdown';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Label } from '@/components/ui/label';
 import { Task } from '@/types/evaluation';
 import { Eye, EyeOff, GraduationCap } from 'lucide-react';
+import TaskTimer from './TaskTimer';
 
 interface TaskEvaluationProps {
   task: Task;
@@ -66,8 +68,11 @@ const TaskEvaluation: React.FC<TaskEvaluationProps> = ({
           <h2 className="text-xl font-semibold">
             {isTraining ? 'Training' : 'Task'} {currentTaskIndex + 1} of {totalTasks}
           </h2>
-          <div className="text-sm text-gray-600">
-            Progress: {Math.round(((currentTaskIndex + 1) / totalTasks) * 100)}%
+          <div className="flex items-center gap-4">
+            {!isTraining && <TaskTimer isActive={true} />}
+            <div className="text-sm text-gray-600">
+              Progress: {Math.round(((currentTaskIndex + 1) / totalTasks) * 100)}%
+            </div>
           </div>
         </div>
         <div className="mt-2 w-full bg-gray-200 rounded-full h-2">
@@ -115,7 +120,9 @@ const TaskEvaluation: React.FC<TaskEvaluationProps> = ({
             <CardContent className="space-y-4">
               {task.sourceAbstracts.map((abstract, index) => (
                 <div key={index} className="p-3 bg-gray-50 rounded-lg">
-                  <p className="text-gray-800 whitespace-pre-line">{abstract}</p>
+                  <div className="text-gray-800 prose prose-sm max-w-none">
+                    <ReactMarkdown>{abstract}</ReactMarkdown>
+                  </div>
                 </div>
               ))}
             </CardContent>
