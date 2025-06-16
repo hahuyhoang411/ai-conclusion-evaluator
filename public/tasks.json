@@ -21,7 +21,7 @@
         "modelB": "Gemma Target Conclusion"
       },
       "correctScores": {
-        "modelA_score": 4.333333333333333,
+        "modelA_score": 4.0,
         "modelB_score": 2.0
       },
       "isTraining": true
@@ -44,8 +44,8 @@
         "modelB": "Gemma Target Conclusion"
       },
       "correctScores": {
-        "modelA_score": 2.6666666666666665,
-        "modelB_score": 2.6666666666666665
+        "modelA_score": 3,
+        "modelB_score": 3
       },
       "isTraining": true
     }
