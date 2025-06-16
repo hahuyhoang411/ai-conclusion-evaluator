@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Clock } from 'lucide-react';
 
@@ -41,7 +40,7 @@ const TaskTimer: React.FC<TaskTimerProps> = ({ isActive, onTimeUpdate }) => {
   };
 
   return (
-    <div className="flex items-center gap-2 text-sm text-gray-600 bg-gray-50 px-3 py-2 rounded-lg">
+    <div className="fixed top-4 right-4 z-50 flex items-center gap-2 rounded-lg bg-black bg-opacity-70 px-4 py-2 text-sm text-white shadow-lg backdrop-blur-sm">
       <Clock size={16} />
       <span>Time: {formatTime(seconds)}</span>
     </div>

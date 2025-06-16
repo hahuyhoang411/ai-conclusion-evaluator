@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import ReactMarkdown from 'react-markdown';
 import { Button } from '@/components/ui/button';
@@ -62,14 +61,14 @@ const TaskEvaluation: React.FC<TaskEvaluationProps> = ({
 
   return (
     <div className="space-y-6">
+      {!isTraining && <TaskTimer isActive={true} />}
       {/* Progress Tracker */}
       <div className="bg-white p-4 rounded-lg shadow-sm border">
         <div className="flex justify-between items-center">
           <h2 className="text-xl font-semibold">
             {isTraining ? 'Training' : 'Task'} {currentTaskIndex + 1} of {totalTasks}
           </h2>
-          <div className="flex items-center gap-4">
-            {!isTraining && <TaskTimer isActive={true} />}
+          <div className="flex items-center">
             <div className="text-sm text-gray-600">
               Progress: {Math.round(((currentTaskIndex + 1) / totalTasks) * 100)}%
             </div>
