@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Task, Evaluation } from '@/types/evaluation';
@@ -5,13 +6,6 @@ import { Task, Evaluation } from '@/types/evaluation';
 interface Progress {
   current: number;
   total: number;
-}
-
-interface UserProgress {
-  annotator_id: string;
-  tasks_completed: number;
-  training_completed: boolean;
-  session_start_time: string;
 }
 
 interface EvaluatorState {
@@ -23,7 +17,6 @@ interface EvaluatorState {
   isInTrainingMode: boolean;
 }
 
-const STORAGE_KEY = 'evaluator_state';
 const SESSION_KEY = 'evaluator_session';
 
 export const useEvaluator = () => {
@@ -51,8 +44,9 @@ export const useEvaluator = () => {
   const [state, setState] = useState<EvaluatorState>(getInitialState);
   const [allTasks, setAllTasks] = useState<Task[]>([]);
   const [trainingTasks, setTrainingTasks] = useState<Task[]>([]);
-  const [userProgress, setUserProgress] = useState<UserProgress | null>(null);
   const [localTrainingIndex, setLocalTrainingIndex] = useState(0);
+  const [isTrainingCompleted, setIsTrainingCompleted] = useState(false);
+  const [evaluationTaskIndex, setEvaluationTaskIndex] = useState(0);
 
   // Save state to sessionStorage whenever it changes
   useEffect(() => {
@@ -93,107 +87,74 @@ export const useEvaluator = () => {
     }
   };
 
-  const loadUserAndProgress = async () => {
-    console.log('Loading user and progress...');
+  const checkUserAuthentication = async () => {
+    console.log('Checking user authentication...');
     try {
       const { data: { user }, error: userError } = await supabase.auth.getUser();
       
       if (userError || !user) {
-        console.log('No authenticated user, redirecting to survey');
-        setState(prev => ({ ...prev, status: 'needs_survey' }));
-        return;
-      }
-
-      console.log('User found:', user.id);
-
-      const { data: progress, error: progressError } = await supabase
-        .from('user_progress')
-        .select('*')
-        .eq('annotator_id', user.id)
-        .single();
-
-      if (progressError && progressError.code !== 'PGRST116') {
-        console.error('Error fetching progress:', progressError);
-        throw progressError;
-      }
-
-      if (!progress) {
-        console.log('No progress found, user needs survey');
-        setState(prev => ({ ...prev, status: 'needs_survey' }));
-        return;
-      }
-
-      console.log('User progress:', progress);
-      setUserProgress(progress);
-
-      // Check if training is completed - force training if not completed
-      const forceTraining = !progress.training_completed;
-      console.log('Training completed:', progress.training_completed, 'Force training:', forceTraining);
-
-      if (forceTraining) {
-        console.log('Starting training mode');
+        console.log('No authenticated user, starting training mode');
         setState(prev => ({ 
           ...prev, 
           status: 'training',
           isInTrainingMode: true 
         }));
-      } else if (progress.tasks_completed >= allTasks.length) {
+        return;
+      }
+
+      console.log('User authenticated:', user.id);
+      
+      // Check how many evaluations the user has completed
+      const { data: evaluations, error: evalError } = await supabase
+        .from('evaluations')
+        .select('*')
+        .eq('annotator_id', user.id);
+
+      if (evalError) {
+        console.error('Error fetching evaluations:', evalError);
+        throw evalError;
+      }
+
+      const completedEvaluations = evaluations?.length || 0;
+      console.log('Completed evaluations:', completedEvaluations);
+
+      if (completedEvaluations >= allTasks.length) {
         console.log('All tasks completed');
         setState(prev => ({ ...prev, status: 'complete' }));
       } else {
-        console.log('Starting evaluation mode');
-        setState(prev => ({ 
-          ...prev, 
-          status: 'evaluating',
-          isInTrainingMode: false 
-        }));
+        // Start with training if not completed yet
+        if (!isTrainingCompleted) {
+          console.log('Starting training mode');
+          setState(prev => ({ 
+            ...prev, 
+            status: 'training',
+            isInTrainingMode: true 
+          }));
+        } else {
+          console.log('Starting evaluation mode');
+          setEvaluationTaskIndex(completedEvaluations);
+          setState(prev => ({ 
+            ...prev, 
+            status: 'evaluating',
+            isInTrainingMode: false 
+          }));
+        }
       }
 
     } catch (error) {
-      console.error('Error in loadUserAndProgress:', error);
+      console.error('Error in checkUserAuthentication:', error);
       setState(prev => ({ ...prev, status: 'error', error: error.message }));
     }
   };
 
   const submitBackgroundSurvey = async (surveyData: any) => {
-    console.log('Submitting background survey:', surveyData);
-    try {
-      setState(prev => ({ ...prev, status: 'loading_tasks' }));
-      
-      const { data: { user }, error: userError } = await supabase.auth.getUser();
-      if (userError || !user) throw userError;
-
-      const { error: surveyError } = await supabase
-        .from('background_surveys')
-        .insert({
-          annotator_id: user.id,
-          ...surveyData
-        });
-
-      if (surveyError) throw surveyError;
-
-      const { error: progressError } = await supabase
-        .from('user_progress')
-        .insert({
-          annotator_id: user.id,
-          tasks_completed: 0,
-          training_completed: false,
-          session_start_time: new Date().toISOString()
-        });
-
-      if (progressError) throw progressError;
-
-      console.log('Survey submitted, starting training');
-      setState(prev => ({ 
-        ...prev, 
-        status: 'training',
-        isInTrainingMode: true 
-      }));
-      
-    } catch (error) {
-      console.error('Error submitting survey:', error);
-      setState(prev => ({ ...prev, status: 'error', error: error.message }));
-    }
+    console.log('Background survey data received, proceeding to training:', surveyData);
+    // Since we don't have background_surveys table, just proceed to training
+    setState(prev => ({ 
+      ...prev, 
+      status: 'training',
+      isInTrainingMode: true 
+    }));
   };
 
   const updateCurrentTask = () => {
@@ -210,15 +171,14 @@ export const useEvaluator = () => {
         currentTask: task, 
         trainingProgress: progress 
       }));
-    } else if (!state.isInTrainingMode && allTasks.length > 0 && userProgress) {
-      const taskIndex = userProgress.tasks_completed;
-      const task = allTasks[taskIndex];
+    } else if (!state.isInTrainingMode && allTasks.length > 0) {
+      const task = allTasks[evaluationTaskIndex];
       const progress = {
-        current: taskIndex,
+        current: evaluationTaskIndex,
         total: allTasks.length
       };
       
-      console.log('Setting evaluation task:', taskIndex, 'of', allTasks.length);
+      console.log('Setting evaluation task:', evaluationTaskIndex, 'of', allTasks.length);
       setState(prev => ({ 
         ...prev, 
         currentTask: task, 
@@ -236,23 +196,7 @@ export const useEvaluator = () => {
       
       if (nextIndex >= trainingTasks.length) {
         console.log('Training completed, switching to evaluation');
-        
-        // Mark training as completed in database
-        if (userProgress) {
-          try {
-            const { error } = await supabase
-              .from('user_progress')
-              .update({ training_completed: true })
-              .eq('annotator_id', userProgress.annotator_id);
-            
-            if (error) throw error;
-            
-            setUserProgress(prev => prev ? { ...prev, training_completed: true } : null);
-          } catch (error) {
-            console.error('Error updating training completion:', error);
-          }
-        }
-        
+        setIsTrainingCompleted(true);
         setState(prev => ({ 
           ...prev, 
           status: 'evaluating',
@@ -267,8 +211,8 @@ export const useEvaluator = () => {
     }
 
     // Handle actual evaluation submission
-    if (!state.currentTask || !userProgress) {
-      console.error('No current task or user progress');
+    if (!state.currentTask) {
+      console.error('No current task');
       return;
     }
 
@@ -278,10 +222,10 @@ export const useEvaluator = () => {
 
       const evaluation: Omit<Evaluation, 'id' | 'created_at'> = {
         annotator_id: user.id,
-        task_id: parseInt(state.currentTask.id.toString()),
+        task_id: parseInt(state.currentTask.taskId.toString()),
         score_a: scores.scoreA,
         score_b: scores.scoreB,
-        session_start_time: userProgress.session_start_time,
+        session_start_time: new Date().toISOString(),
         evaluation_end_time: new Date().toISOString()
       };
 
@@ -293,21 +237,14 @@ export const useEvaluator = () => {
 
       if (evalError) throw evalError;
 
-      const newTasksCompleted = userProgress.tasks_completed + 1;
-      console.log('Updating tasks completed to:', newTasksCompleted);
+      const newTaskIndex = evaluationTaskIndex + 1;
+      console.log('Moving to next evaluation task:', newTaskIndex);
 
-      const { error: progressError } = await supabase
-        .from('user_progress')
-        .update({ tasks_completed: newTasksCompleted })
-        .eq('annotator_id', user.id);
-
-      if (progressError) throw progressError;
-
-      setUserProgress(prev => prev ? { ...prev, tasks_completed: newTasksCompleted } : null);
-
-      if (newTasksCompleted >= allTasks.length) {
+      if (newTaskIndex >= allTasks.length) {
         console.log('All evaluation tasks completed');
         setState(prev => ({ ...prev, status: 'complete' }));
+      } else {
+        setEvaluationTaskIndex(newTaskIndex);
       }
 
     } catch (error) {
@@ -327,7 +264,7 @@ export const useEvaluator = () => {
       try {
         setState(prev => ({ ...prev, status: 'loading_tasks' }));
         await loadTasks();
-        await loadUserAndProgress();
+        await checkUserAuthentication();
       } catch (error) {
         console.error('Initialization error:', error);
         setState(prev => ({ ...prev, status: 'error', error: error.message }));
@@ -340,7 +277,7 @@ export const useEvaluator = () => {
   // Update current task when relevant state changes
   useEffect(() => {
     updateCurrentTask();
-  }, [state.isInTrainingMode, localTrainingIndex, userProgress, allTasks, trainingTasks]);
+  }, [state.isInTrainingMode, localTrainingIndex, evaluationTaskIndex, allTasks, trainingTasks]);
 
   return {
     status: state.status,
