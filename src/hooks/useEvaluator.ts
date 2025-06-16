@@ -1,292 +1,402 @@
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { Task, Evaluation } from '@/types/evaluation';
+import { useAuth } from '@/hooks/useAuth';
+import { Task, Annotator, Evaluation, TasksData } from '@/types/evaluation';
+import { toast } from 'sonner';
+import { User, PostgrestError } from '@supabase/supabase-js';
 
-interface Progress {
-  current: number;
-  total: number;
-}
-
-interface EvaluatorState {
-  status: 'initializing' | 'loading_tasks' | 'training' | 'evaluating' | 'complete' | 'error';
-  error: string | null;
+type EvaluatorState = {
+  status: 'initializing' | 'loading_tasks' | 'needs_survey' | 'training' | 'evaluating' | 'complete' | 'error';
+  allTrainingTasks: Task[];
+  allEvaluationTasks: Task[];
+  assignedTasks: Task[];
+  annotator: Annotator | null;
+  completedEvaluations: Evaluation[];
   currentTask: Task | null;
-  progress: Progress;
-  trainingProgress: Progress;
+  progress: { current: number; total: number };
+  trainingProgress: { current: number; total: number };
   isInTrainingMode: boolean;
-}
-
-const SESSION_KEY = 'evaluator_session';
+  error: string | null;
+  user: User | null;
+  // Local training progress (not stored in database)
+  completedTrainingTaskIds: Set<string>;
+};
 
 export const useEvaluator = () => {
-  // Initialize state from sessionStorage to prevent reinitialization on tab changes
-  const getInitialState = (): EvaluatorState => {
-    try {
-      const sessionData = sessionStorage.getItem(SESSION_KEY);
-      if (sessionData) {
-        return JSON.parse(sessionData);
-      }
-    } catch (error) {
-      console.error('Error parsing session data:', error);
+  const { user } = useAuth();
+  const [state, setState] = useState<EvaluatorState>({
+    status: 'initializing',
+    allTrainingTasks: [],
+    allEvaluationTasks: [],
+    assignedTasks: [],
+    annotator: null,
+    completedEvaluations: [],
+    currentTask: null,
+    progress: { current: 0, total: 0 },
+    trainingProgress: { current: 0, total: 0 },
+    isInTrainingMode: false,
+    error: null,
+    user: null,
+    completedTrainingTaskIds: new Set(),
+  });
+
+  const handleError = useCallback((message: string, error?: any) => {
+    console.error(message, error);
+    toast.error(message);
+    setState(prev => ({ ...prev, status: 'error', error: message }));
+  }, []);
+
+  const getNextBlockNumber = async (): Promise<number> => {
+    const { data, error } = await supabase.functions.invoke('get-next-block');
+
+    if (error) {
+      handleError('Could not determine next task block.', error);
+      throw new Error('Could not determine next task block.');
     }
-    
-    return {
-      status: 'initializing',
-      error: null,
-      currentTask: null,
-      progress: { current: 0, total: 0 },
-      trainingProgress: { current: 0, total: 0 },
-      isInTrainingMode: true
-    };
+
+    return data.nextBlockNumber;
   };
 
-  const [state, setState] = useState<EvaluatorState>(getInitialState);
-  const [allTasks, setAllTasks] = useState<Task[]>([]);
-  const [trainingTasks, setTrainingTasks] = useState<Task[]>([]);
-  const [localTrainingIndex, setLocalTrainingIndex] = useState(0);
-  const [isTrainingCompleted, setIsTrainingCompleted] = useState(false);
-  const [evaluationTaskIndex, setEvaluationTaskIndex] = useState(0);
-
-  // Save state to sessionStorage whenever it changes
-  useEffect(() => {
-    try {
-      sessionStorage.setItem(SESSION_KEY, JSON.stringify(state));
-    } catch (error) {
-      console.error('Error saving session data:', error);
-    }
-  }, [state]);
-
-  const loadTasks = async () => {
-    console.log('Loading tasks...');
+  const loadTasks = useCallback(async () => {
+    setState(prev => ({ ...prev, status: 'loading_tasks' }));
     try {
       const response = await fetch('/tasks.json');
-      if (!response.ok) {
-        throw new Error(`Failed to fetch tasks: ${response.status}`);
+      if (!response.ok) throw new Error('Failed to fetch tasks.json');
+      const tasksData = await response.json();
+      
+      console.log('Raw tasks data:', tasksData);
+      
+      // Handle both old and new format
+      let trainingTasks: Task[] = [];
+      let evaluationTasks: Task[] = [];
+      
+      if (Array.isArray(tasksData)) {
+        // Old format - treat all as evaluation tasks
+        evaluationTasks = tasksData.map(task => ({ ...task, isTraining: false }));
+      } else if (tasksData.trainingTasks && tasksData.evaluationTasks) {
+        // New format
+        trainingTasks = tasksData.trainingTasks.map(task => ({ ...task, isTraining: true }));
+        evaluationTasks = tasksData.evaluationTasks.map(task => ({ ...task, isTraining: false }));
       }
-      const data = await response.json();
-      console.log('Raw tasks data:', data);
       
-      if (!data.tasks || !Array.isArray(data.tasks)) {
-        throw new Error('Invalid tasks data structure');
-      }
+      console.log('Parsed training tasks:', trainingTasks.length, trainingTasks);
+      console.log('Parsed evaluation tasks:', evaluationTasks.length, evaluationTasks);
       
-      const tasks = data.tasks as Task[];
-      const training = tasks.filter(task => task.correctScores !== undefined);
-      const evaluation = tasks.filter(task => task.correctScores === undefined);
+      setState(prev => ({ 
+        ...prev, 
+        allTrainingTasks: trainingTasks,
+        allEvaluationTasks: evaluationTasks 
+      }));
       
-      console.log(`Loaded ${tasks.length} total tasks: ${training.length} training, ${evaluation.length} evaluation`);
-      
-      setAllTasks(evaluation);
-      setTrainingTasks(training);
-      
-      return { training, evaluation };
+      return { trainingTasks, evaluationTasks };
     } catch (error) {
-      console.error('Error loading tasks:', error);
-      throw error;
+      handleError('Failed to load evaluation tasks.', error);
+      return { trainingTasks: [], evaluationTasks: [] };
     }
-  };
+  }, [handleError]);
 
-  const checkUserAuthentication = async () => {
-    console.log('Checking user authentication...');
+  const getOrCreateAnnotator = useCallback(async (user: User): Promise<Annotator | null> => {
     try {
-      const { data: { user }, error: userError } = await supabase.auth.getUser();
+      console.log('Checking annotator profile for user:', user.email);
       
-      if (userError || !user) {
-        console.log('No authenticated user, starting training mode');
-        setState(prev => ({ 
-          ...prev, 
-          status: 'training',
-          isInTrainingMode: true 
-        }));
-        return;
+      let { data: annotator, error: fetchError } = await supabase
+        .from('annotators')
+        .select('*')
+        .eq('email', user.email)
+        .single();
+
+      if (fetchError && fetchError.code !== 'PGRST116') {
+        console.log('Error fetching annotator:', fetchError);
+        throw fetchError;
+      }
+      
+      if (!annotator) {
+        console.log('No annotator found, creating new one...');
+        const { data: newAnnotator, error: insertError } = await supabase
+          .from('annotators')
+          .insert({ 
+            id: user.id, 
+            email: user.email 
+          })
+          .select()
+          .single();
+        
+        if (insertError) {
+          console.log('Error creating annotator:', insertError);
+          handleError('Could not create your user profile. Please contact support.', insertError);
+          return null;
+        }
+        annotator = newAnnotator;
+        console.log('Successfully created annotator profile.');
       }
 
-      console.log('User authenticated:', user.id);
-      
-      // Check how many evaluations the user has completed
-      const { data: evaluations, error: evalError } = await supabase
+      if (annotator && annotator.block_number === null) {
+        console.log(`Annotator ${user.email} needs a task block. Assigning one...`);
+        const nextBlock = await getNextBlockNumber();
+        
+        const { data: updatedAnnotator, error: updateError } = await supabase
+          .from('annotators')
+          .update({ block_number: nextBlock })
+          .eq('id', user.id)
+          .select()
+          .single();
+
+        if (updateError) {
+          handleError('Failed to assign a task block. Please try again.', updateError);
+          return annotator;
+        }
+
+        console.log(`Assigned block ${nextBlock} to ${user.email}.`);
+        return updatedAnnotator as Annotator;
+      }
+
+      return annotator as Annotator;
+
+    } catch (error) {
+      handleError('There was an issue accessing your user profile.', error);
+      return null;
+    }
+  }, [handleError]);
+
+  const loadUserAndProgress = useCallback(async (user: User, trainingTasks: Task[], evaluationTasks: Task[]) => {
+    console.log('Loading user progress with:', {
+      trainingTasksCount: trainingTasks.length,
+      evaluationTasksCount: evaluationTasks.length
+    });
+
+    const annotatorProfile = await getOrCreateAnnotator(user);
+    if (!annotatorProfile) return;
+
+    const blockNumber = annotatorProfile.block_number;
+    const blockSize = 20;
+    
+    if (blockNumber === null) {
+      handleError('Could not determine your assigned tasks. The block number is missing.');
+      return;
+    }
+
+    const startIndex = blockNumber * blockSize;
+    const endIndex = startIndex + blockSize;
+    const assignedEvaluationTasks = evaluationTasks.slice(startIndex, endIndex);
+
+    if (assignedEvaluationTasks.length === 0) {
+      console.warn(`No evaluation tasks found for block ${blockNumber}.`);
+      setState(prev => ({ ...prev, status: 'complete', annotator: annotatorProfile, user }));
+      return;
+    }
+
+    if (!annotatorProfile.expertise_group) {
+      setState(prev => ({ 
+        ...prev, 
+        status: 'needs_survey', 
+        annotator: annotatorProfile, 
+        user, 
+        assignedTasks: assignedEvaluationTasks,
+        allTrainingTasks: trainingTasks,
+        allEvaluationTasks: evaluationTasks
+      }));
+      return;
+    }
+
+    try {
+      const { data: evaluations, error } = await supabase
         .from('evaluations')
         .select('*')
-        .eq('annotator_id', user.id);
+        .eq('annotator_id', annotatorProfile.id);
 
-      if (evalError) {
-        console.error('Error fetching evaluations:', evalError);
-        throw evalError;
-      }
+      if (error) throw error;
 
-      const completedEvaluations = evaluations?.length || 0;
-      console.log('Completed evaluations:', completedEvaluations);
+      console.log('All evaluations for user:', evaluations);
 
-      if (completedEvaluations >= allTasks.length) {
-        console.log('All tasks completed');
-        setState(prev => ({ ...prev, status: 'complete' }));
+      const mainEvaluations = evaluations?.filter(e => 
+        assignedEvaluationTasks.some(t => t.taskId.toString() === e.task_id?.toString())
+      ) || [];
+
+      console.log('Main evaluations found:', mainEvaluations.length);
+
+      // Check if user needs to complete training - FORCE training if we have training tasks
+      const shouldDoTraining = trainingTasks.length > 0;
+      
+      console.log('Should do training?', shouldDoTraining, {
+        trainingTasksLength: trainingTasks.length
+      });
+      
+      if (shouldDoTraining) {
+        const nextTrainingTask = trainingTasks[0] || null;
+        
+        console.log('Setting up training mode, next task:', nextTrainingTask);
+        
+        setState(prev => ({
+          ...prev,
+          allTrainingTasks: trainingTasks,
+          allEvaluationTasks: evaluationTasks,
+          assignedTasks: assignedEvaluationTasks,
+          annotator: annotatorProfile,
+          completedEvaluations: evaluations || [],
+          status: 'training',
+          currentTask: nextTrainingTask,
+          isInTrainingMode: true,
+          trainingProgress: { current: 0, total: trainingTasks.length },
+          progress: { current: mainEvaluations.length, total: assignedEvaluationTasks.length },
+          user,
+          completedTrainingTaskIds: new Set(),
+        }));
       } else {
-        // Start with training if not completed yet
-        if (!isTrainingCompleted) {
-          console.log('Starting training mode');
-          setState(prev => ({ 
-            ...prev, 
-            status: 'training',
-            isInTrainingMode: true 
-          }));
-        } else {
-          console.log('Starting evaluation mode');
-          setEvaluationTaskIndex(completedEvaluations);
-          setState(prev => ({ 
-            ...prev, 
-            status: 'evaluating',
-            isInTrainingMode: false 
-          }));
-        }
+        // Proceed to main evaluation
+        const completedIds = new Set(mainEvaluations.map(e => e.task_id?.toString()));
+        const nextTask = assignedEvaluationTasks.find(t => !completedIds.has(t.taskId.toString())) || null;
+
+        console.log('Setting up evaluation mode, next task:', nextTask);
+
+        setState(prev => ({
+          ...prev,
+          allTrainingTasks: trainingTasks,
+          allEvaluationTasks: evaluationTasks,
+          assignedTasks: assignedEvaluationTasks,
+          annotator: annotatorProfile,
+          completedEvaluations: evaluations || [],
+          status: nextTask ? 'evaluating' : 'complete',
+          currentTask: nextTask,
+          isInTrainingMode: false,
+          trainingProgress: { current: 0, total: trainingTasks.length },
+          progress: { current: mainEvaluations.length, total: assignedEvaluationTasks.length },
+          user,
+        }));
       }
-
     } catch (error) {
-      console.error('Error in checkUserAuthentication:', error);
-      setState(prev => ({ ...prev, status: 'error', error: error.message }));
+      handleError('Failed to load your evaluation progress.', error);
     }
-  };
-
-  const submitBackgroundSurvey = async (surveyData: any) => {
-    console.log('Background survey data received, proceeding to training:', surveyData);
-    // Since we don't have background_surveys table, just proceed to training
-    setState(prev => ({ 
-      ...prev, 
-      status: 'training',
-      isInTrainingMode: true 
-    }));
-  };
-
-  const updateCurrentTask = () => {
-    if (state.isInTrainingMode && trainingTasks.length > 0) {
-      const task = trainingTasks[localTrainingIndex];
-      const progress = {
-        current: localTrainingIndex,
-        total: trainingTasks.length
-      };
-      
-      console.log('Setting training task:', localTrainingIndex, 'of', trainingTasks.length);
-      setState(prev => ({ 
-        ...prev, 
-        currentTask: task, 
-        trainingProgress: progress 
-      }));
-    } else if (!state.isInTrainingMode && allTasks.length > 0) {
-      const task = allTasks[evaluationTaskIndex];
-      const progress = {
-        current: evaluationTaskIndex,
-        total: allTasks.length
-      };
-      
-      console.log('Setting evaluation task:', evaluationTaskIndex, 'of', allTasks.length);
-      setState(prev => ({ 
-        ...prev, 
-        currentTask: task, 
-        progress: progress 
-      }));
+  }, [getOrCreateAnnotator, handleError]);
+  
+  useEffect(() => {
+    if (user) {
+      loadTasks().then(({ trainingTasks, evaluationTasks }) => {
+        if (evaluationTasks.length > 0 || trainingTasks.length > 0) {
+          loadUserAndProgress(user, trainingTasks, evaluationTasks);
+        }
+      });
+    } else {
+      setState(prev => ({ ...prev, status: 'initializing' }));
     }
-  };
+  }, [user, loadTasks, loadUserAndProgress]);
 
   const submitEvaluation = async (scores: { scoreA: number; scoreB: number }) => {
-    console.log('Submitting evaluation:', scores);
-    
+    if (!state.annotator || !state.currentTask) return;
+
     if (state.isInTrainingMode) {
-      // Handle training progression locally
-      const nextIndex = localTrainingIndex + 1;
+      // Handle training progression locally (no database storage)
+      const currentTaskId = state.currentTask.taskId.toString();
+      const newCompletedTrainingIds = new Set(state.completedTrainingTaskIds);
+      newCompletedTrainingIds.add(currentTaskId);
       
-      if (nextIndex >= trainingTasks.length) {
-        console.log('Training completed, switching to evaluation');
-        setIsTrainingCompleted(true);
-        setState(prev => ({ 
-          ...prev, 
-          status: 'evaluating',
-          isInTrainingMode: false 
+      const nextTrainingTask = state.allTrainingTasks.find(t => 
+        !newCompletedTrainingIds.has(t.taskId.toString())
+      ) || null;
+      
+      if (nextTrainingTask) {
+        // Continue with training
+        setState(prev => ({
+          ...prev,
+          completedTrainingTaskIds: newCompletedTrainingIds,
+          currentTask: nextTrainingTask,
+          trainingProgress: { 
+            current: newCompletedTrainingIds.size, 
+            total: prev.allTrainingTasks.length 
+          },
         }));
-        setLocalTrainingIndex(0); // Reset for next time
+        toast.success('Training progress saved!');
       } else {
-        console.log('Moving to next training task:', nextIndex);
-        setLocalTrainingIndex(nextIndex);
+        // Training complete, move to main evaluation
+        const mainEvaluations = state.completedEvaluations.filter(e => 
+          state.assignedTasks.some(t => t.taskId.toString() === e.task_id?.toString())
+        );
+        const completedMainIds = new Set(mainEvaluations.map(e => e.task_id?.toString()));
+        const nextMainTask = state.assignedTasks.find(t => !completedMainIds.has(t.taskId.toString())) || null;
+        
+        setState(prev => ({
+          ...prev,
+          completedTrainingTaskIds: newCompletedTrainingIds,
+          currentTask: nextMainTask,
+          status: nextMainTask ? 'evaluating' : 'complete',
+          isInTrainingMode: false,
+          trainingProgress: { current: newCompletedTrainingIds.size, total: prev.allTrainingTasks.length },
+        }));
+        toast.success('Training completed! Starting evaluation tasks.');
       }
       return;
     }
 
-    // Handle actual evaluation submission
-    if (!state.currentTask) {
-      console.error('No current task');
-      return;
-    }
-
+    // Handle main evaluation (store in database)
     try {
-      const { data: { user }, error: userError } = await supabase.auth.getUser();
-      if (userError || !user) throw userError;
+      const taskIdAsNumber = typeof state.currentTask.taskId === 'string' 
+        ? parseInt(state.currentTask.taskId, 10) 
+        : state.currentTask.taskId;
 
-      const evaluation: Omit<Evaluation, 'id' | 'created_at'> = {
-        annotator_id: user.id,
-        task_id: Number(state.currentTask.taskId),
+      const newEvaluation = {
+        annotator_id: state.annotator.id,
+        task_id: taskIdAsNumber,
         score_a: scores.scoreA,
         score_b: scores.scoreB,
         session_start_time: new Date().toISOString(),
-        evaluation_end_time: new Date().toISOString()
+        evaluation_end_time: new Date().toISOString(),
       };
-
-      console.log('Inserting evaluation:', evaluation);
-
-      const { error: evalError } = await supabase
+      
+      const { data, error } = await supabase
         .from('evaluations')
-        .insert(evaluation);
+        .insert(newEvaluation)
+        .select()
+        .single();
+      
+      if (error) throw error;
+      
+      toast.success('Progress saved!');
 
-      if (evalError) throw evalError;
-
-      const newTaskIndex = evaluationTaskIndex + 1;
-      console.log('Moving to next evaluation task:', newTaskIndex);
-
-      if (newTaskIndex >= allTasks.length) {
-        console.log('All evaluation tasks completed');
-        setState(prev => ({ ...prev, status: 'complete' }));
-      } else {
-        setEvaluationTaskIndex(newTaskIndex);
-      }
+      setState(prev => {
+        const updatedEvaluations = [...prev.completedEvaluations, data];
+        const mainEvaluations = updatedEvaluations.filter(e => 
+          prev.assignedTasks.some(t => t.taskId.toString() === e.task_id?.toString())
+        );
+        const completedIds = new Set(mainEvaluations.map(e => e.task_id?.toString()));
+        const nextTask = prev.assignedTasks.find(t => !completedIds.has(t.taskId.toString())) || null;
+        
+        return {
+          ...prev,
+          completedEvaluations: updatedEvaluations,
+          currentTask: nextTask,
+          status: nextTask ? 'evaluating' : 'complete',
+          progress: { current: mainEvaluations.length, total: prev.assignedTasks.length },
+        };
+      });
 
     } catch (error) {
-      console.error('Error submitting evaluation:', error);
-      setState(prev => ({ ...prev, error: error.message }));
+      handleError('Failed to save your evaluation.', error);
     }
   };
 
-  // Initialize the evaluator
-  useEffect(() => {
-    const initialize = async () => {
-      // Skip initialization if we're already past the initializing state
-      if (state.status !== 'initializing') {
-        return;
-      }
+  const submitBackgroundSurvey = async (expertise: 'medical' | 'general') => {
+    if (!state.annotator) return;
+
+    try {
+      const { data, error } = await supabase
+        .from('annotators')
+        .update({ expertise_group: expertise })
+        .eq('id', state.annotator.id)
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      toast.success('Thank you! Your profile is updated.');
       
-      try {
-        setState(prev => ({ ...prev, status: 'loading_tasks' }));
-        await loadTasks();
-        await checkUserAuthentication();
-      } catch (error) {
-        console.error('Initialization error:', error);
-        setState(prev => ({ ...prev, status: 'error', error: error.message }));
+      if (user) {
+        loadUserAndProgress(user, state.allTrainingTasks, state.allEvaluationTasks);
       }
-    };
 
-    initialize();
-  }, []); // Remove state.status dependency to prevent re-initialization
-
-  // Update current task when relevant state changes
-  useEffect(() => {
-    updateCurrentTask();
-  }, [state.isInTrainingMode, localTrainingIndex, evaluationTaskIndex, allTasks, trainingTasks]);
-
-  return {
-    status: state.status,
-    error: state.error,
-    currentTask: state.currentTask,
-    progress: state.progress,
-    trainingProgress: state.trainingProgress,
-    isInTrainingMode: state.isInTrainingMode,
-    submitEvaluation,
-    submitBackgroundSurvey
+    } catch (error) {
+      handleError('Failed to save your background information.', error);
+    }
   };
+
+  return { ...state, submitEvaluation, submitBackgroundSurvey };
 };

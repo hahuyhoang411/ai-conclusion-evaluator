@@ -37,7 +37,7 @@ export interface Annotator {
 export interface Evaluation {
   id: number;
   annotator_id: string;
-  task_id: number | null;
+  task_id: number | string | null;
   score_a: number | null;
   score_b: number | null;
   session_start_time: string | null;
