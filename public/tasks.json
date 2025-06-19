@@ -61,7 +61,7 @@
           },
           "conclusionB": {
             "phrase": "",
-            "score": 1,
+            "score": 0,
             "explanation": "Conclusion 2 omits outcome/survival results completely."
           }
         },
@@ -85,7 +85,7 @@
       "taskId": "train_2",
       "sourcePaperTitle": "An Indirect Treatment Comparison of Semaglutide 2.0 mg vs Dulaglutide 3.0 mg and 4.5 mg Using Multilevel Network Meta-regression",
       "sourcePaperId": 34922383,
-      "referenceConclusion": "This ITC demonstrated significantly greater reductions from baseline in HbA 1c and body weight with semaglutide 2.0 mg vs dulaglutide 3.0 mg and 4.5 mg. The findings of this study provide important comparative effectiveness information until randomized head-to-head studies become available. This ITC demonstrated significantly greater reductions from baseline in HbA 1c and body weight with semaglutide 2.0 mg vs dulaglutide 3.0 mg and 4.5 mg. The findings of this study, and particularly the results provided in different trial populations, provide important comparative effectiveness information until randomized head-to-head studies become available.",
+      "referenceConclusion": "This ITC demonstrated significantly greater reductions from baseline in HbA 1c and body weight with semaglutide 2.0 mg vs dulaglutide 3.0 mg and 4.5 mg. The findings of this study provide important comparative effectiveness information until randomized head-to-head studies become available.",
       "sourceAbstracts": [
         "# Title: Semaglutide versus dulaglutide once weekly in patients with type 2 diabetes (SUSTAIN 7): a randomised, open-label, phase 3b trial.\n# Abstract: Despite common mechanisms of actions, glucagon-like peptide-1 receptor agonists differ in structure, pharmacokinetic profile, and clinical effects. This head-to-head trial compared semaglutide with dulaglutide in patients with inadequately controlled type 2 diabetes.",
         "# Title: Efficacy and Safety of Dulaglutide 3.0 mg and 4.5 mg Versus Dulaglutide 1.5 mg in Metformin-Treated Patients With Type 2 Diabetes in a Randomized Controlled Trial (AWARD-11).\n# Abstract: To compare efficacy and safety of dulaglutide at doses of 3.0 and 4.5 mg versus 1.5 mg in patients with type 2 diabetes inadequately controlled with metformin.",
@@ -103,6 +103,34 @@
         "modelA_score": 3.0,
         "modelB_score": 3.0
       },
+      "sentenceMappings": [
+        {
+          "referenceSentenceIndex": 0,
+          "conclusionA": {
+            "phrase": "semaglutide 2.0 mg demonstrated superior HbA1c reduction compared to dulaglutide 3.0 mg and 4.5 mg",
+            "score": 3,
+            "explanation": "Does not mention body weight, but aligns well with HbA1c part."
+          },
+          "conclusionB": {
+            "phrase": "Semaglutide 2.0 mg demonstrates efficacy benefits compared to dulaglutide, with studies directly comparing semaglutide to dulaglutide and investigating higher doses of both semaglutide (2.0mg vs 1.0mg) and dulaglutide (3.0mg & 4.5mg vs 1.5mg)",
+            "score": 2,
+            "explanation": "Vague term “efficacy benefits,” and does not explicitly mention HbA1c or body weight reductions"
+          }
+        },
+        {
+          "referenceSentenceIndex": 1,
+          "conclusionA": {
+            "phrase": "However, this comparison is limited by the heterogeneity between the included trials (SUSTAIN 7, AWARD-11, SUSTAIN FORTE) and the indirect nature of the comparison itself.",
+            "score": 3,
+            "explanation": "Does not mention body weight, but aligns well with HbA1c part."
+          },
+          "conclusionB": {
+            "phrase": "",
+            "score": 0,
+            "explanation": "No content"
+          }
+        },
+      ],
       "isTraining": true
     }
   ],
