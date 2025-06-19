@@ -22,13 +22,22 @@ const TrainingHighlight: React.FC<TrainingHighlightProps> = ({
 }) => {
   const [hoveredSentenceIndex, setHoveredSentenceIndex] = useState<number | null>(null);
 
-  // Split text into sentences
+  // Enhanced sentence splitting that handles decimal numbers
   const splitIntoSentences = (text: string): string[] => {
-    return text
-      .split(/[.!?]+/)
+    // First, protect decimal numbers by temporarily replacing them
+    const protectedText = text.replace(/(\d+\.\d+)/g, '###DECIMAL$1###');
+    
+    // Split on sentence endings, but be more careful about periods
+    const sentences = protectedText
+      .split(/(?<=[.!?])\s+(?=[A-Z])/) // Split on sentence endings followed by whitespace and capital letter
       .map(s => s.trim())
       .filter(s => s.length > 0)
-      .map(s => s + (text.includes(s + '.') ? '.' : text.includes(s + '!') ? '!' : text.includes(s + '?') ? '?' : '.'));
+      .map(s => {
+        // Restore decimal numbers
+        return s.replace(/###DECIMAL(\d+\.\d+)###/g, '$1');
+      });
+
+    return sentences;
   };
 
   const referenceSentences = useMemo(() => splitIntoSentences(referenceConclusion), [referenceConclusion]);
