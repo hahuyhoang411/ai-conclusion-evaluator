@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
@@ -48,14 +47,35 @@ export const useEvaluator = () => {
   }, []);
 
   const getNextBlockNumber = async (): Promise<number> => {
+    console.log('Requesting next block number from edge function...');
+    
     const { data, error } = await supabase.functions.invoke('get-next-block');
 
     if (error) {
+      console.error('Error calling get-next-block function:', error);
       handleError('Could not determine next task block.', error);
       throw new Error('Could not determine next task block.');
     }
 
-    return data.nextBlockNumber;
+    console.log('Block assignment response:', data);
+    
+    if (data.error) {
+      console.error('Block assignment error:', data.error);
+      handleError(data.error);
+      throw new Error(data.error);
+    }
+
+    const { nextBlockNumber, isReassignment, totalIncompleteBlocks } = data;
+    
+    if (isReassignment) {
+      console.log(`🔄 Reassigning incomplete block ${nextBlockNumber} (${totalIncompleteBlocks} incomplete blocks remaining)`);
+      toast.info(`You've been assigned block ${nextBlockNumber} (previously incomplete)`);
+    } else {
+      console.log(`✨ Assigning new block ${nextBlockNumber}`);
+      toast.success(`You've been assigned block ${nextBlockNumber}`);
+    }
+
+    return nextBlockNumber;
   };
 
   const loadTasks = useCallback(async () => {
@@ -132,23 +152,36 @@ export const useEvaluator = () => {
       }
 
       if (annotator && annotator.block_number === null) {
-        console.log(`Annotator ${user.email} needs a task block. Assigning one...`);
-        const nextBlock = await getNextBlockNumber();
+        console.log(`Annotator ${user.email} needs a task block. Requesting assignment...`);
         
-        const { data: updatedAnnotator, error: updateError } = await supabase
-          .from('annotators')
-          .update({ block_number: nextBlock })
-          .eq('id', user.id)
-          .select()
-          .single();
+        try {
+          const nextBlock = await getNextBlockNumber();
+          
+          const { data: updatedAnnotator, error: updateError } = await supabase
+            .from('annotators')
+            .update({ block_number: nextBlock })
+            .eq('id', user.id)
+            .select()
+            .single();
 
-        if (updateError) {
-          handleError('Failed to assign a task block. Please try again.', updateError);
+          if (updateError) {
+            console.error('Failed to update annotator with block number:', updateError);
+            handleError('Failed to assign a task block. Please try again.', updateError);
+            return annotator;
+          }
+
+          console.log(`✅ Successfully assigned block ${nextBlock} to ${user.email}`);
+          return updatedAnnotator as Annotator;
+        } catch (blockError) {
+          console.error('Block assignment failed:', blockError);
+          // Return the annotator without block assignment so they can try again
           return annotator;
         }
+      }
 
-        console.log(`Assigned block ${nextBlock} to ${user.email}.`);
-        return updatedAnnotator as Annotator;
+      // Log current block assignment
+      if (annotator.block_number !== null) {
+        console.log(`User ${user.email} is already assigned to block ${annotator.block_number}`);
       }
 
       return annotator as Annotator;
@@ -157,7 +190,7 @@ export const useEvaluator = () => {
       handleError('There was an issue accessing your user profile.', error);
       return null;
     }
-  }, [handleError]);
+  }, [handleError, getNextBlockNumber]);
 
   const loadUserAndProgress = useCallback(async (user: User, trainingTasks: Task[], evaluationTasks: Task[]) => {
     console.log('Loading user progress with:', {

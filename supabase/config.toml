@@ -1,1 +1,49 @@
+
 project_id = "wqvjjltdtpixcebqvsbf"
+
+[api]
+enabled = true
+port = 54321
+schemas = ["public", "storage", "graphql_public"]
+extra_search_path = ["public", "extensions"]
+max_rows = 1000
+
+[auth]
+enabled = true
+port = 54320
+site_url = "http://localhost:3000"
+additional_redirect_urls = ["https://medmeta-humaneval-web.lovable.app"]
+jwt_expiry = 3600
+refresh_token_rotation_enabled = true
+secure_password_change_enabled = false
+enable_signup = true
+
+[auth.email]
+enable_signup = true
+double_confirm_changes = true
+enable_confirmations = false
+
+[db]
+port = 54322
+
+[storage]
+enabled = true
+port = 54323
+file_size_limit = "50MiB"
+s3_max_part_size = "5MiB"
+s3_upload_cutoff = "10MiB"
+
+[edge_runtime]
+enabled = true
+port = 54324
+
+[functions.get-next-block]
+verify_jwt = false
+
+[realtime]
+enabled = true
+port = 54325
+
+[studio]
+enabled = true
+port = 54323
