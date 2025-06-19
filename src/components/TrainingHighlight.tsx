@@ -1,8 +1,8 @@
-
 import React, { useState, useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { HelpCircle } from 'lucide-react';
+import { SentenceMapping } from '@/types/evaluation';
 
 interface TrainingHighlightProps {
   referenceConclusion: string;
@@ -12,13 +12,15 @@ interface TrainingHighlightProps {
     modelA_score: number;
     modelB_score: number;
   };
+  sentenceMappings?: SentenceMapping[];
 }
 
 const TrainingHighlight: React.FC<TrainingHighlightProps> = ({
   referenceConclusion,
   conclusionA,
   conclusionB,
-  correctScores
+  correctScores,
+  sentenceMappings = []
 }) => {
   const [hoveredSentenceIndex, setHoveredSentenceIndex] = useState<number | null>(null);
 
@@ -41,59 +43,90 @@ const TrainingHighlight: React.FC<TrainingHighlightProps> = ({
   };
 
   const referenceSentences = useMemo(() => splitIntoSentences(referenceConclusion), [referenceConclusion]);
-  const conclusionASentences = useMemo(() => splitIntoSentences(conclusionA), [conclusionA]);
-  const conclusionBSentences = useMemo(() => splitIntoSentences(conclusionB), [conclusionB]);
 
-  // Simple keyword-based matching for demonstration
-  const findMatchingSentences = (referenceSentence: string, targetSentences: string[]): number[] => {
-    const referenceWords = referenceSentence.toLowerCase().split(/\s+/).filter(word => word.length > 3);
-    const matches: number[] = [];
+  // Get score color based on score value
+  const getScoreColor = (score: number) => {
+    if (score >= 4.5) return 'bg-green-200 border-green-400 text-green-800';
+    if (score >= 3.5) return 'bg-blue-200 border-blue-400 text-blue-800';
+    if (score >= 2.5) return 'bg-yellow-200 border-yellow-400 text-yellow-800';
+    if (score >= 1.5) return 'bg-orange-200 border-orange-400 text-orange-800';
+    return 'bg-red-200 border-red-400 text-red-800';
+  };
 
-    targetSentences.forEach((sentence, index) => {
-      const sentenceWords = sentence.toLowerCase().split(/\s+/);
-      const commonWords = referenceWords.filter(word => sentenceWords.some(sw => sw.includes(word) || word.includes(sw)));
+  // Render text with highlighted phrases
+  const renderTextWithHighlights = (
+    text: string, 
+    mappings: Array<{ startIndex: number; endIndex: number; score: number; explanation: string }>,
+    isActive: boolean
+  ) => {
+    if (!isActive || mappings.length === 0) {
+      return <span>{text}</span>;
+    }
+
+    // Sort mappings by start index to handle overlaps properly
+    const sortedMappings = [...mappings].sort((a, b) => a.startIndex - b.startIndex);
+    const parts: React.ReactNode[] = [];
+    let lastIndex = 0;
+
+    sortedMappings.forEach((mapping, idx) => {
+      const { startIndex, endIndex, score, explanation } = mapping;
       
-      // If more than 20% of reference words are found, consider it a match
-      if (commonWords.length / referenceWords.length > 0.2) {
-        matches.push(index);
+      // Add text before highlight
+      if (startIndex > lastIndex) {
+        parts.push(
+          <span key={`text-${idx}`}>
+            {text.slice(lastIndex, startIndex)}
+          </span>
+        );
       }
+
+      // Add highlighted phrase with tooltip
+      const highlightedText = text.slice(startIndex, endIndex);
+      parts.push(
+        <TooltipProvider key={`highlight-${idx}`}>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <span 
+                className={`${getScoreColor(score)} px-1 py-0.5 rounded border-2 cursor-help transition-all duration-200 hover:shadow-lg`}
+              >
+                {highlightedText}
+              </span>
+            </TooltipTrigger>
+            <TooltipContent>
+              <div className="max-w-xs">
+                <div className="font-semibold">Score: {score}/5</div>
+                <div className="text-sm mt-1">{explanation}</div>
+              </div>
+            </TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
+      );
+
+      lastIndex = endIndex;
     });
 
-    return matches;
+    // Add remaining text
+    if (lastIndex < text.length) {
+      parts.push(
+        <span key="text-end">
+          {text.slice(lastIndex)}
+        </span>
+      );
+    }
+
+    return <>{parts}</>;
   };
 
-  const renderHighlightedText = (sentences: string[], matchingIndices: number[], isReference: boolean = false) => {
-    return (
-      <div className="space-y-1">
-        {sentences.map((sentence, index) => {
-          const isHighlighted = hoveredSentenceIndex !== null && matchingIndices.includes(index);
-          const isHovered = isReference && hoveredSentenceIndex === index;
-          
-          return (
-            <span
-              key={index}
-              className={`inline-block transition-all duration-200 cursor-pointer ${
-                isHighlighted || isHovered
-                  ? 'bg-yellow-200 shadow-lg transform scale-105 rounded px-1'
-                  : 'hover:bg-yellow-50'
-              } ${isReference ? 'border-b border-dotted border-gray-300' : ''}`}
-              onMouseEnter={() => isReference ? setHoveredSentenceIndex(index) : null}
-              onMouseLeave={() => isReference ? setHoveredSentenceIndex(null) : null}
-            >
-              {sentence}{index < sentences.length - 1 ? ' ' : ''}
-            </span>
-          );
-        })}
-      </div>
-    );
+  // Get mappings for a specific sentence and conclusion
+  const getMappingsForConclusion = (sentenceIndex: number, conclusion: 'A' | 'B') => {
+    const mapping = sentenceMappings.find(m => m.referenceSentenceIndex === sentenceIndex);
+    if (!mapping) return [];
+    
+    const phraseMapping = conclusion === 'A' ? mapping.conclusionA : mapping.conclusionB;
+    if (!phraseMapping) return [];
+    
+    return [phraseMapping];
   };
-
-  const matchingIndicesA = hoveredSentenceIndex !== null 
-    ? findMatchingSentences(referenceSentences[hoveredSentenceIndex], conclusionASentences)
-    : [];
-  const matchingIndicesB = hoveredSentenceIndex !== null 
-    ? findMatchingSentences(referenceSentences[hoveredSentenceIndex], conclusionBSentences)
-    : [];
 
   return (
     <div className="space-y-6">
@@ -111,8 +144,8 @@ const TrainingHighlight: React.FC<TrainingHighlightProps> = ({
                 </TooltipTrigger>
                 <TooltipContent>
                   <p className="max-w-xs">
-                    Hover over sentences in this reference to see which parts of the generated conclusions match. 
-                    This helps you understand how the scoring was determined.
+                    Hover over sentences in this reference to see which specific phrases in the generated conclusions match. 
+                    Highlighted phrases show their individual scores and explanations.
                   </p>
                 </TooltipContent>
               </Tooltip>
@@ -120,8 +153,25 @@ const TrainingHighlight: React.FC<TrainingHighlightProps> = ({
           </div>
         </CardHeader>
         <CardContent>
-          <div className="text-gray-800 leading-relaxed">
-            {renderHighlightedText(referenceSentences, [], true)}
+          <div className="text-gray-800 leading-relaxed space-y-2">
+            {referenceSentences.map((sentence, index) => (
+              <div
+                key={index}
+                className={`inline-block cursor-pointer transition-all duration-200 p-1 rounded ${
+                  hoveredSentenceIndex === index
+                    ? 'bg-blue-100 shadow-md'
+                    : 'hover:bg-blue-50'
+                }`}
+                onMouseEnter={() => setHoveredSentenceIndex(index)}
+                onMouseLeave={() => setHoveredSentenceIndex(null)}
+              >
+                <span className="text-sm text-blue-600 font-medium mr-2">
+                  [{index + 1}]
+                </span>
+                {sentence}
+                {index < referenceSentences.length - 1 && ' '}
+              </div>
+            ))}
           </div>
         </CardContent>
       </Card>
@@ -132,12 +182,16 @@ const TrainingHighlight: React.FC<TrainingHighlightProps> = ({
         <Card className="border-green-200">
           <CardHeader>
             <CardTitle className="text-lg font-semibold text-green-700">
-              Conclusion 1 (Score: {correctScores.modelA_score.toFixed(1)})
+              Conclusion 1 (Overall Score: {correctScores.modelA_score.toFixed(1)})
             </CardTitle>
           </CardHeader>
           <CardContent>
             <div className="text-gray-800 leading-relaxed">
-              {renderHighlightedText(conclusionASentences, matchingIndicesA)}
+              {renderTextWithHighlights(
+                conclusionA,
+                hoveredSentenceIndex !== null ? getMappingsForConclusion(hoveredSentenceIndex, 'A') : [],
+                hoveredSentenceIndex !== null
+              )}
             </div>
           </CardContent>
         </Card>
@@ -146,25 +200,53 @@ const TrainingHighlight: React.FC<TrainingHighlightProps> = ({
         <Card className="border-purple-200">
           <CardHeader>
             <CardTitle className="text-lg font-semibold text-purple-700">
-              Conclusion 2 (Score: {correctScores.modelB_score.toFixed(1)})
+              Conclusion 2 (Overall Score: {correctScores.modelB_score.toFixed(1)})
             </CardTitle>
           </CardHeader>
           <CardContent>
             <div className="text-gray-800 leading-relaxed">
-              {renderHighlightedText(conclusionBSentences, matchingIndicesB)}
+              {renderTextWithHighlights(
+                conclusionB,
+                hoveredSentenceIndex !== null ? getMappingsForConclusion(hoveredSentenceIndex, 'B') : [],
+                hoveredSentenceIndex !== null
+              )}
             </div>
           </CardContent>
         </Card>
       </div>
 
-      {hoveredSentenceIndex !== null && (
-        <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
-          <p className="text-sm text-amber-800">
-            <strong>Highlighting:</strong> Sentence {hoveredSentenceIndex + 1} from the reference and its potential matches in the generated conclusions.
-            Yellow highlights show content similarity that contributes to scoring.
-          </p>
-        </div>
-      )}
+      {/* Score Legend */}
+      <Card className="bg-gray-50 border-gray-200">
+        <CardHeader>
+          <CardTitle className="text-sm font-semibold text-gray-700">
+            Score Legend
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="flex flex-wrap gap-3 text-xs">
+            <div className="flex items-center gap-1">
+              <div className="w-4 h-4 bg-green-200 border border-green-400 rounded"></div>
+              <span>5-4.5: Excellent</span>
+            </div>
+            <div className="flex items-center gap-1">
+              <div className="w-4 h-4 bg-blue-200 border border-blue-400 rounded"></div>
+              <span>4.4-3.5: High</span>
+            </div>
+            <div className="flex items-center gap-1">
+              <div className="w-4 h-4 bg-yellow-200 border border-yellow-400 rounded"></div>
+              <span>3.4-2.5: Moderate</span>
+            </div>
+            <div className="flex items-center gap-1">
+              <div className="w-4 h-4 bg-orange-200 border border-orange-400 rounded"></div>
+              <span>2.4-1.5: Low</span>
+            </div>
+            <div className="flex items-center gap-1">
+              <div className="w-4 h-4 bg-red-200 border border-red-400 rounded"></div>
+              <span>1.4-0: Very Low</span>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
     </div>
   );
 };

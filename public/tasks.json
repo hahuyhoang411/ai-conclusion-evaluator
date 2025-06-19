@@ -25,6 +25,62 @@
         "modelA_score": 4.0,
         "modelB_score": 2.0
       },
+      "sentenceMappings": [
+        {
+          "referenceSentenceIndex": 0,
+          "conclusionA": {
+            "phrase": "achieve significantly higher plasma and cerebrospinal fluid exposures without increased toxicity",
+            "startIndex": 183,
+            "endIndex": 274,
+            "score": 5,
+            "explanation": "Excellent—captures both plasma/CSF increases and safety"
+          },
+          "conclusionB": {
+            "phrase": "results in comparable plasma drug exposures – as measured by AUC0-24",
+            "startIndex": 81,
+            "endIndex": 148,
+            "score": 3,
+            "explanation": "Moderate—captures plasma AUC increase but omits CSF detail and safety nuance"
+          }
+        },
+        {
+          "referenceSentenceIndex": 1,
+          "conclusionB": {
+            "phrase": "supporting the feasibility of utilizing higher oral doses in future clinical trials",
+            "startIndex": 178,
+            "endIndex": 260,
+            "score": 4,
+            "explanation": "High—captures need for trials of higher doses, though 'low dose' rationale is implicit"
+          }
+        },
+        {
+          "referenceSentenceIndex": 2,
+          "conclusionA": {
+            "phrase": "survival benefits have not been definitively established",
+            "startIndex": 284,
+            "endIndex": 340,
+            "score": 4,
+            "explanation": "High—correctly notes lack of established benefit, though 'treatment outcome' vs. 'survival' is slightly narrower"
+          }
+        },
+        {
+          "referenceSentenceIndex": 3,
+          "conclusionA": {
+            "phrase": "require confirmation in larger phase III trials",
+            "startIndex": 345,
+            "endIndex": 393,
+            "score": 5,
+            "explanation": "Excellent—almost word-for-word match on phase III trials for efficacy"
+          },
+          "conclusionB": {
+            "phrase": "in future clinical trials evaluating treatment efficacy",
+            "startIndex": 261,
+            "endIndex": 317,
+            "score": 3,
+            "explanation": "Moderate—captures 'future trials' and 'efficacy' but lacks 'large sample size / phase III' specificity"
+          }
+        }
+      ],
       "isTraining": true
     },
     {

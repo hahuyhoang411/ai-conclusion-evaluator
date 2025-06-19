@@ -1,3 +1,17 @@
+export interface PhraseMapping {
+  phrase: string;
+  startIndex: number;
+  endIndex: number;
+  score: number;
+  explanation: string;
+}
+
+export interface SentenceMapping {
+  referenceSentenceIndex: number;
+  conclusionA?: PhraseMapping;
+  conclusionB?: PhraseMapping;
+}
+
 export interface Task {
   taskId: number | string;
   sourcePaperId?: number;
@@ -17,6 +31,8 @@ export interface Task {
     modelB_score: number;
   };
   isTraining: boolean;
+  // New field for granular sentence mappings in training tasks
+  sentenceMappings?: SentenceMapping[];
   // Legacy support for old format
   metaAnalysisName?: string;
 }

@@ -148,6 +148,7 @@ const TaskEvaluation: React.FC<TaskEvaluationProps> = ({
                 conclusionA={task.modelOutputs.conclusionA}
                 conclusionB={task.modelOutputs.conclusionB}
                 correctScores={task.correctScores}
+                sentenceMappings={task.sentenceMappings}
               />
             </div>
           )}

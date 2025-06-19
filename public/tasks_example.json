@@ -2,14 +2,15 @@
   "trainingTasks": [
     {
       "taskId": "train_1",
+      "sourcePaperTitle": "Intensified Antituberculosis Therapy Regimen Containing Higher Dose Rifampin for Tuberculous Meningitis: A Systematic Review and Meta-Analysis",
       "sourcePaperId": 35280900,
       "referenceConclusion": "In conclusion, this meta-analysis suggested that a higher dose of rifampin could significantly increase the pharmacokinetic parameters containing plasma and CSF concentration and the plasma AUC 0−24 , without a remarkable increase of adverse reactions. This phenomenon may indicate the idea that the crucial drug in the antituberculosis regimen was used in a low dose, more studies are required to shed light on this question. However, we found that there was no improvement in the treatment outcome. In terms of efficacy, more work will need to be done, especially large sample size phase III studies to determine the effect of an intensified regimen including a higher dose of rifampin.",
       "sourceAbstracts": [
-        "# Title: Intensified …"
-      ],
+        "# Title: Intensified regimen containing rifampicin and moxifloxacin for tuberculous meningitis: an open-label, randomised controlled phase 2 trial.\n# Abstract: Intensified antibiotic treatment might improve the outcome of tuberculous meningitis. We assessed pharmacokinetics, safety, and survival benefit of several treatment regimens containing high-dose rifampicin and moxifloxacin in patients with tuberculous meningitis in a hospital setting."
+        ],
       "modelOutputs": {
-        "conclusionA": "**Primary …",
-        "conclusionB": "Increasing …"
+        "conclusionA": "**Primary Concluding Statement:**\n\nIn adults with tuberculous meningitis, intensified regimens using higher doses of rifampin, specifically oral doses of 20-35 mg/kg (compared to standard 10 mg/kg) or intravenous doses of 15-20 mg/kg, achieve significantly higher plasma and cerebrospinal fluid exposures without increased toxicity; however, survival benefits have not been definitively established and require confirmation in larger phase III trials.",
+        "conclusionB": "Increasing the oral dose of rifampin to 35 mg/kg in adults with tuberculous meningitis results in comparable plasma drug exposures – as measured by AUC0-24 – to intravenous administration of 20 mg/kg, supporting the feasibility of utilizing higher oral doses in future clinical trials evaluating treatment efficacy."
       },
       "modelIdentities": {
         "modelA": "MedGemma Target Conclusion",
@@ -19,27 +20,83 @@
         "modelA_score": 4.0,
         "modelB_score": 2.0
       },
+      "sentenceMappings": [
+        {
+          "referenceSentenceIndex": 0,
+          "conclusionA": {
+            "phrase": "achieve significantly higher plasma and cerebrospinal fluid exposures without increased toxicity",
+            "startIndex": 183,
+            "endIndex": 274,
+            "score": 5,
+            "explanation": "Excellent—captures both plasma/CSF increases and safety"
+          },
+          "conclusionB": {
+            "phrase": "results in comparable plasma drug exposures – as measured by AUC0-24",
+            "startIndex": 81,
+            "endIndex": 148,
+            "score": 3,
+            "explanation": "Moderate—captures plasma AUC increase but omits CSF detail and safety nuance"
+          }
+        },
+        {
+          "referenceSentenceIndex": 1,
+          "conclusionB": {
+            "phrase": "supporting the feasibility of utilizing higher oral doses in future clinical trials",
+            "startIndex": 178,
+            "endIndex": 260,
+            "score": 4,
+            "explanation": "High—captures need for trials of higher doses, though 'low dose' rationale is implicit"
+          }
+        },
+        {
+          "referenceSentenceIndex": 2,
+          "conclusionA": {
+            "phrase": "survival benefits have not been definitively established",
+            "startIndex": 284,
+            "endIndex": 340,
+            "score": 4,
+            "explanation": "High—correctly notes lack of established benefit, though 'treatment outcome' vs. 'survival' is slightly narrower"
+          }
+        },
+        {
+          "referenceSentenceIndex": 3,
+          "conclusionA": {
+            "phrase": "require confirmation in larger phase III trials",
+            "startIndex": 345,
+            "endIndex": 393,
+            "score": 5,
+            "explanation": "Excellent—almost word-for-word match on phase III trials for efficacy"
+          },
+          "conclusionB": {
+            "phrase": "in future clinical trials evaluating treatment efficacy",
+            "startIndex": 261,
+            "endIndex": 317,
+            "score": 3,
+            "explanation": "Moderate—captures 'future trials' and 'efficacy' but lacks 'large sample size / phase III' specificity"
+          }
+        }
+      ],
       "isTraining": true
     },
     {
       "taskId": "train_2",
+      "sourcePaperTitle": "An Indirect Treatment Comparison of Semaglutide 2.0 mg vs Dulaglutide 3.0 mg and 4.5 mg Using Multilevel Network Meta-regression",
       "sourcePaperId": 34922383,
       "referenceConclusion": "This ITC demonstrated significantly greater reductions from baseline in HbA 1c and body weight with semaglutide 2.0 mg vs dulaglutide 3.0 mg and 4.5 mg. The findings of this study provide important comparative effectiveness information until randomized head-to-head studies become available. This ITC demonstrated significantly greater reductions from baseline in HbA 1c and body weight with semaglutide 2.0 mg vs dulaglutide 3.0 mg and 4.5 mg. The findings of this study, and particularly the results provided in different trial populations, provide important comparative effectiveness information until randomized head-to-head studies become available.",
       "sourceAbstracts": [
-        "# Title: Semaglutide versus dulaglutide once weekly in patients with type 2 diabetes (SUSTAIN 7): a randomised, open-label, phase 3b trial.\n# Abstract: Despite common mechanisms of actions, glucagon-like peptide-1 receptor agonists differ in structure, pharmacokinetic profile, and clinical effects. This head-to-head trial compared semaglutide with dulaglutide in patients with inadequately controlled type 2 diabetes.",
-        "# Title: Efficacy and Safety of Dulaglutide 3.0 mg and 4.5 mg Versus Dulaglutide 1.5 mg in Metformin-Treated Patients With Type 2 Diabetes in a Randomized Controlled Trial (AWARD-11).\n# Abstract: To compare efficacy and safety of dulaglutide at doses of 3.0 and 4.5 mg versus 1.5 mg in patients with type 2 diabetes inadequately controlled with metformin."
+        "# Title: Semaglutide versus dulaglutide once weekly in patients with type 2 diabetes (SUSTAIN 7): a randomised, open-label, phase 3b trial.\n# Abstract: Despite common mechanisms of actions, glucagon-like peptide-1 receptor agonists differ in structure, pharmacokinetic profile, and clinical effects. This head-to-head trial compared semaglutide with dulaglutide in patients with inadequately controlled type 2 diabetes."
       ],
       "modelOutputs": {
-        "conclusionA": "**Primary …",
-        "conclusionB": "Semaglutide…"
+        "conclusionA": "**Primary Concluding Statement:**\n\nBased on an indirect treatment comparison, semaglutide 2.0 mg demonstrated superior HbA1c reduction compared to dulaglutide 3.0 mg and 4.5 mg in patients with type 2 diabetes inadequately controlled on metformin. However, this comparison is limited by the heterogeneity between the included trials (SUSTAIN 7, AWARD-11, SUSTAIN FORTE) and the indirect nature of the comparison itself.",
+        "conclusionB": "Semaglutide 2.0 mg demonstrates efficacy benefits compared to dulaglutide, with studies directly comparing semaglutide to dulaglutide and investigating higher doses of both semaglutide (2.0mg vs 1.0mg) and dulaglutide (3.0mg & 4.5mg vs 1.5mg) in patients with inadequately controlled type 2 diabetes, all while patients were maintained on a stable dose of metformin with or without a sulfonylurea.\n\n\n\n"
       },
       "modelIdentities": {
         "modelA": "MedGemma Target Conclusion",
         "modelB": "Gemma Target Conclusion"
       },
       "correctScores": {
-        "modelA_score": 2.6666666666666665,
-        "modelB_score": 2.6666666666666665
+        "modelA_score": 3.0,
+        "modelB_score": 3.0
       },
       "isTraining": true
     }
