@@ -113,7 +113,7 @@
           },
           "conclusionB": {
             "phrase": "Semaglutide 2.0 mg demonstrates efficacy benefits compared to dulaglutide, with studies directly comparing semaglutide to dulaglutide and investigating higher doses of both semaglutide (2.0mg vs 1.0mg) and dulaglutide (3.0mg & 4.5mg vs 1.5mg)",
-            "score": 2,
+            "score": 3,
             "explanation": "Vague term “efficacy benefits,” and does not explicitly mention HbA1c or body weight reductions"
           }
         },
@@ -129,7 +129,7 @@
             "score": 0,
             "explanation": "No content"
           }
-        },
+        }
       ],
       "isTraining": true
     }
