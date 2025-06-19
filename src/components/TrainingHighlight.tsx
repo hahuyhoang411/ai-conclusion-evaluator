@@ -286,6 +286,14 @@ const TrainingHighlight: React.FC<TrainingHighlightProps> = ({
               </div>
             </div>
           </div>
+          
+          <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+            <p className="text-xs text-blue-700">
+              <strong>Note:</strong> The overall score is not a mathematical average of the individual phrase scores. 
+              The phrase-level scoring shown above is for educational purposes to help understand which specific 
+              parts contribute to the overall evaluation. The overall score considers the conclusion as a whole.
+            </p>
+          </div>
         </CardContent>
       </Card>
     </div>
