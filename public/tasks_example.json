@@ -2,20 +2,14 @@
   "trainingTasks": [
     {
       "taskId": "train_1",
-      "sourcePaperTitle": "Intensified Antituberculosis Therapy Regimen Containing Higher Dose Rifampin for Tuberculous Meningitis: A Systematic Review and Meta-Analysis",
       "sourcePaperId": 35280900,
       "referenceConclusion": "In conclusion, this meta-analysis suggested that a higher dose of rifampin could significantly increase the pharmacokinetic parameters containing plasma and CSF concentration and the plasma AUC 0−24 , without a remarkable increase of adverse reactions. This phenomenon may indicate the idea that the crucial drug in the antituberculosis regimen was used in a low dose, more studies are required to shed light on this question. However, we found that there was no improvement in the treatment outcome. In terms of efficacy, more work will need to be done, especially large sample size phase III studies to determine the effect of an intensified regimen including a higher dose of rifampin.",
       "sourceAbstracts": [
-        "# Title: Intensified regimen containing rifampicin and moxifloxacin for tuberculous meningitis: an open-label, randomised controlled phase 2 trial.\n# Abstract: Intensified antibiotic treatment might improve the outcome of tuberculous meningitis. We assessed pharmacokinetics, safety, and survival benefit of several treatment regimens containing high-dose rifampicin and moxifloxacin in patients with tuberculous meningitis in a hospital setting.",
-        "# Title: Intensified Antituberculosis Therapy in Adults with Tuberculous Meningitis.\n# Abstract: Tuberculous meningitis is often lethal. Early antituberculosis treatment and adjunctive treatment with glucocorticoids improve survival, but nearly one third of patients with the condition still die. We hypothesized that intensified antituberculosis treatment would enhance the killing of intracerebral Mycobacterium tuberculosis organisms and decrease the rate of death among patients.",
-        "# Title: Double-Blind, Randomized, Placebo-Controlled Phase II Dose-Finding Study To Evaluate High-Dose Rifampin for Tuberculous Meningitis.\n# Abstract: High doses of rifampin may help patients with tuberculous meningitis (TBM) to survive. Pharmacokinetic pharmacodynamic evaluations suggested that rifampin doses higher than 13 mg/kg given intravenously or 20 mg/kg given orally (as previously studied) are warranted to maximize treatment response. In a double-blind, randomized, placebo-controlled phase II trial, we assigned 60 adult TBM patients in Bandung, Indonesia, to standard 450 mg, 900 mg, or 1,350 mg (10, 20, and 30 mg/kg) oral rifampin combined with other TB drugs for 30 days. The endpoints included pharmacokinetic measures, adverse events, and survival. A double and triple dose of oral rifampin led to 3- and 5-fold higher geometric mean total exposures in plasma in the critical early days (2 ±1) of treatment (area under the concentration-time curve from 0 to 24 h [AUC0-24], 53.5 mg · h/liter versus 170.6 mg · h/liter and 293.5 mg · h/liter, respectively; P <0.001), with proportional increases in cerebrospinal fluid (CSF) concentrations and without an increase in the incidence of grade 3 or 4 adverse events. The 6-month mortality was 7/20 (35%), 9/20 (45%), and 3/20 (15%) in the 10-, 20-, and 30-mg/kg groups, respectively (P =0.12). A tripling of the standard dose caused a large increase in rifampin exposure in plasma and CSF and was safe. The survival benefit with this dose should now be evaluated in a larger phase III clinical trial. (This study has been registered at ClinicalTrials.gov under identifier NCT02169882.).",
-        "# Title: Pharmacokinetics and Pharmacodynamics of Intensive Antituberculosis Treatment of Tuberculous Meningitis.\n# Abstract: The most effective antituberculosis drug treatment regimen for tuberculous meningitis is uncertain. We conducted a randomized controlled trial comparing standard treatment with a regimen intensified by rifampin 15 mg/kg and levofloxacin for the first 60 days. The intensified regimen did not improve survival or any other outcome. We therefore conducted a nested pharmacokinetic/pharmacodynamic study in 237 trial participants to define exposure-response relationships that might explain the trial results and improve future therapy. Rifampin 15 mg/kg increased plasma and cerebrospinal fluid (CSF) exposures compared with 10 mg/kg: day 14 exposure increased from 48.2 hour·mg/L (range 18.2-93.8) to 82.5 hour·mg/L (range 8.7-161.0) in plasma and from 3.5 hour·mg/L (range 1.2-9.6) to 6.0 hour·mg/L (range 0.7-15.1) in CSF. However, there was no relationship between rifampin exposure and survival. In contrast, we found that isoniazid exposure was associated with survival, with low exposure predictive of death, and was linked to a fast metabolizer phenotype. Higher doses of isoniazid should be investigated, especially in fast metabolizers.",
-        "# Title: High-Dose Oral and Intravenous Rifampicin for the Treatment of Tuberculous Meningitis in Predominantly Human Immunodeficiency Virus (HIV)-Positive Ugandan Adults: A Phase II Open-Label Randomized Controlled Trial.\n# Abstract: High-dose rifampicin may improve outcomes of tuberculous meningitis (TBM). Little safety or pharmacokinetic (PK) data exist on high-dose rifampicin in human immunodeficiency virus (HIV) coinfection, and no cerebrospinal fluid (CSF) PK data exist from Africa. We hypothesized that high-dose rifampicin would increase serum and CSF concentrations without excess toxicity.",
-        "# Title: Plasma Pharmacokinetics of High-Dose Oral versus Intravenous Rifampicin in Patients with Tuberculous Meningitis: a Randomized Controlled Trial.\n# Abstract: Higher doses of intravenous rifampicin may improve outcomes in tuberculous meningitis but are impractical in high-burden settings. We hypothesized that plasma rifampin exposures would be similar between oral dosing of 35 mg/kg of body weight and intravenous dosing of 20 mg/kg, which has been proposed for efficacy trials in tuberculous meningitis. We performed a randomized parallel-group pharmacokinetic study nested within a clinical trial of intensified antimicrobial therapy for tuberculous meningitis. HIV-positive participants with tuberculous meningitis were recruited from South African hospitals and randomized to one of three rifampicin dosing groups: standard (oral 10 mg/kg), high dose (oral 35 mg/kg), and intravenous (20 mg/kg). Intensive pharmacokinetic sampling was done on day 3. Data were described using noncompartmental analysis, and exposures were compared by geometric mean ratios (GMRs). Forty-six participants underwent pharmacokinetic sampling (standard dose, n =17; high-dose oral, n =15; intravenous, n =14). The median CD4 count was 130 cells/mm3 (interquartile range [IQR], 66 to 253 cells/mm3). The rifampicin geometric mean area under the concentration-time curve from 0 to 24 h (AUC0-24) values were 42.9 μg · h/ml (95% confidence interval [CI], 24.5 to 75.0 μg · h/ml) for the standard dose, 295.2 μg · h/ml (95% CI, 189.9 to 458.8 μg · h/ml) for the high oral dose, and 206.5 μg · h/ml (95% CI, 154.6 to 275.8 μg · h/ml) for intravenous administration. The rifampicin AUC0-24 GMR was 1.44 (90% CI, 0.84 to 2.21) and the maximal concentration of drug in serum (Cmax) GMR was 0.89 (90% CI, 0.63 to 1.23) for high-dose oral administration with respect to intravenous dosing. The plasma rifampicin AUC0-24 was higher after an oral 35-mg/kg dose than with intravenous administration at a 20-mg/kg dose over the first few days of tuberculosis (TB) treatment. The findings support oral rifampicin dosing in future tuberculous meningitis trials."
+        "# Title: Intensified …"
       ],
       "modelOutputs": {
-        "conclusionA": "**Primary Concluding Statement:**\n\nIn adults with tuberculous meningitis, intensified regimens using higher doses of rifampin, specifically oral doses of 20-35 mg/kg (compared to standard 10 mg/kg) or intravenous doses of 15-20 mg/kg, achieve significantly higher plasma and cerebrospinal fluid exposures without increased toxicity; however, survival benefits have not been definitively established and require confirmation in larger phase III trials.",
-        "conclusionB": "Increasing the oral dose of rifampin to 35 mg/kg in adults with tuberculous meningitis results in comparable plasma drug exposures – as measured by AUC0-24 – to intravenous administration of 20 mg/kg, supporting the feasibility of utilizing higher oral doses in future clinical trials evaluating treatment efficacy."
+        "conclusionA": "**Primary …",
+        "conclusionB": "Increasing …"
       },
       "modelIdentities": {
         "modelA": "MedGemma Target Conclusion",
@@ -25,137 +19,27 @@
         "modelA_score": 4.0,
         "modelB_score": 2.0
       },
-      "detailedEvaluation": {
-        "conclusionA": [
-          {
-            "ref_sentence_index": 0,
-            "conclusion_text": "intensified regimens using higher doses of rifampin, specifically oral doses of 20–35 mg/kg […] achieve significantly higher plasma and cerebrospinal fluid exposures without increased toxicity",
-            "score": 5,
-            "reason": "semantically equivalent; it includes key numerical dosage details and captures both increased exposure and lack of increased toxicity."
-          },
-          {
-            "ref_sentence_index": 1,
-            "conclusion_text": "[…] however, survival benefits have not been definitively established and require confirmation in larger phase III trials.",
-            "score": 3,
-            "reason": "partially equivalent; the need for further study is captured, but the motivation for rethinking the standard dosing (possibly underdosed) is less explicit."
-          },
-          {
-            "ref_sentence_index": 2,
-            "conclusion_text": "[…] survival benefits have not been definitively established […]",
-            "score": 4,
-            "reason": "mostly equivalent; “no improvement in treatment outcome” is slightly stronger than “not definitively established,” but both communicate lack of proven efficacy."
-          },
-          {
-            "ref_sentence_index": 3,
-            "conclusion_text": "[…] require confirmation in larger phase III trials.",
-            "score": 5,
-            "reason": "semantically equivalent; both call for phase III trials to assess efficacy of higher-dose rifampin."
-          }
-        ],
-        "conclusionB": [
-          {
-            "ref_sentence_index": 0,
-            "conclusion_text": "Increasing the oral dose of rifampin to 35 mg/kg […] results in comparable plasma drug exposures – as measured by AUC0-24 – to intravenous administration of 20 mg/kg",
-            "score": 3,
-            "reason": "partially equivalent; it addresses AUC and higher dosing but shifts focus from increase in PK parameters to comparison between oral and IV routes. It omits the key point of no increase in adverse reactions."
-          },
-          {
-            "ref_sentence_index": 1,
-            "conclusion_text": "[…] supporting the feasibility of utilizing higher oral doses in future clinical trials evaluating treatment efficacy.",
-            "score": 3,
-            "reason": "partially equivalent; supports higher doses and future trials, but omits the hypothesis of underdosing and the call for investigation into that."
-          },
-          {
-            "ref_sentence_index": 2,
-            "conclusion_text": "(Not clearly addressed)",
-            "score": 1,
-            "reason": "this point is largely missing; conclusion 2 doesn't mention treatment outcomes or survival/effectiveness."
-          },
-          {
-            "ref_sentence_index": 3,
-            "conclusion_text": "[…] future clinical trials evaluating treatment efficacy.",
-            "score": 3,
-            "reason": "partially captures this, but lacks specificity (e.g., “large sample size,” “phase III”)."
-          }
-        ]
-      },
       "isTraining": true
     },
     {
       "taskId": "train_2",
-      "sourcePaperTitle": "An Indirect Treatment Comparison of Semaglutide 2.0 mg vs Dulaglutide 3.0 mg and 4.5 mg Using Multilevel Network Meta-regression",
       "sourcePaperId": 34922383,
       "referenceConclusion": "This ITC demonstrated significantly greater reductions from baseline in HbA 1c and body weight with semaglutide 2.0 mg vs dulaglutide 3.0 mg and 4.5 mg. The findings of this study provide important comparative effectiveness information until randomized head-to-head studies become available. This ITC demonstrated significantly greater reductions from baseline in HbA 1c and body weight with semaglutide 2.0 mg vs dulaglutide 3.0 mg and 4.5 mg. The findings of this study, and particularly the results provided in different trial populations, provide important comparative effectiveness information until randomized head-to-head studies become available.",
       "sourceAbstracts": [
         "# Title: Semaglutide versus dulaglutide once weekly in patients with type 2 diabetes (SUSTAIN 7): a randomised, open-label, phase 3b trial.\n# Abstract: Despite common mechanisms of actions, glucagon-like peptide-1 receptor agonists differ in structure, pharmacokinetic profile, and clinical effects. This head-to-head trial compared semaglutide with dulaglutide in patients with inadequately controlled type 2 diabetes.",
-        "# Title: Efficacy and Safety of Dulaglutide 3.0 mg and 4.5 mg Versus Dulaglutide 1.5 mg in Metformin-Treated Patients With Type 2 Diabetes in a Randomized Controlled Trial (AWARD-11).\n# Abstract: To compare efficacy and safety of dulaglutide at doses of 3.0 and 4.5 mg versus 1.5 mg in patients with type 2 diabetes inadequately controlled with metformin.",
-        "# Title: Efficacy and safety of once-weekly semaglutide 2·0 mg versus 1·0 mg in patients with type 2 diabetes (SUSTAIN FORTE): a double-blind, randomised, phase 3B trial.\n# Abstract: Semaglutide is an effective treatment for type 2 diabetes; however, 20-30% of patients given semaglutide 1·0 mg do not reach glycaemic treatment goals. We aimed to investigate the efficacy and safety of once-weekly semaglutide 2·0 mg versus 1·0 mg in adults with inadequately controlled type 2 diabetes on a stable dose of metformin with or without a sulfonylurea."
+        "# Title: Efficacy and Safety of Dulaglutide 3.0 mg and 4.5 mg Versus Dulaglutide 1.5 mg in Metformin-Treated Patients With Type 2 Diabetes in a Randomized Controlled Trial (AWARD-11).\n# Abstract: To compare efficacy and safety of dulaglutide at doses of 3.0 and 4.5 mg versus 1.5 mg in patients with type 2 diabetes inadequately controlled with metformin."
       ],
       "modelOutputs": {
-        "conclusionA": "**Primary Concluding Statement:**\n\nBased on an indirect treatment comparison, semaglutide 2.0 mg demonstrated superior HbA1c reduction compared to dulaglutide 3.0 mg and 4.5 mg in patients with type 2 diabetes inadequately controlled on metformin. However, this comparison is limited by the heterogeneity between the included trials (SUSTAIN 7, AWARD-11, SUSTAIN FORTE) and the indirect nature of the comparison itself.",
-        "conclusionB": "Semaglutide 2.0 mg demonstrates efficacy benefits compared to dulaglutide, with studies directly comparing semaglutide to dulaglutide and investigating higher doses of both semaglutide (2.0mg vs 1.0mg) and dulaglutide (3.0mg & 4.5mg vs 1.5mg) in patients with inadequately controlled type 2 diabetes, all while patients were maintained on a stable dose of metformin with or without a sulfonylurea.\n\n\n\n"
+        "conclusionA": "**Primary …",
+        "conclusionB": "Semaglutide…"
       },
       "modelIdentities": {
         "modelA": "MedGemma Target Conclusion",
         "modelB": "Gemma Target Conclusion"
       },
       "correctScores": {
-        "modelA_score": 3.0,
-        "modelB_score": 3.0
-      },
-      "detailedEvaluation": {
-        "conclusionA": [
-          {
-            "ref_sentence_index": 0,
-            "conclusion_text": "Semaglutide 2.0 mg demonstrated superior HbA1c reduction compared to dulaglutide 3.0 mg and 4.5 mg […]",
-            "score": 4,
-            "reason": "Captures HbA1c benefit clearly but omits body weight, which is a key secondary outcome in the original."
-          },
-          {
-            "ref_sentence_index": 1,
-            "conclusion_text": "However, this comparison is limited by the heterogeneity between the included trials […] and the indirect nature of the comparison itself.",
-            "score": 4,
-            "reason": "The phrasing is more cautious, but it reflects the same limitation and interim nature of evidence. Missing the “comparative effectiveness” framing, but acknowledges the lack of head-to-head trials."
-          },
-          {
-            "ref_sentence_index": 2,
-            "conclusion_text": "Semaglutide 2.0 mg demonstrated superior HbA1c reduction compared to dulaglutide 3.0 mg and 4.5 mg […]",
-            "score": 4,
-            "reason": "Captures HbA1c benefit clearly but omits body weight, which is a key secondary outcome in the original."
-          },
-          {
-            "ref_sentence_index": 3,
-            "conclusion_text": "(Not explicitly addressed)",
-            "score": 2,
-            "reason": "Only a general mention of trials (SUSTAIN 7, AWARD-11, SUSTAIN FORTE), no emphasis on value of different trial populations or comparative insight."
-          }
-        ],
-        "conclusionB": [
-          {
-            "ref_sentence_index": 0,
-            "conclusion_text": "Semaglutide 2.0 mg demonstrates efficacy benefits compared to dulaglutide […]",
-            "score": 3,
-            "reason": "General “efficacy benefits” lacks specificity of HbA1c and weight outcomes. It references higher doses, but not outcome measures clearly."
-          },
-          {
-            "ref_sentence_index": 1,
-            "conclusion_text": "[…] studies directly comparing semaglutide to dulaglutide […] in patients with inadequately controlled type 2 diabetes […]",
-            "score": 2,
-            "reason": "Mentions comparisons and study contexts, but implies direct comparisons which contradicts the reference's indirect (ITC) method. Also misses “comparative effectiveness” framing."
-          },
-          {
-            "ref_sentence_index": 2,
-            "conclusion_text": "Semaglutide 2.0 mg demonstrates efficacy benefits compared to dulaglutide […]",
-            "score": 3,
-            "reason": "General “efficacy benefits” lacks specificity of HbA1c and weight outcomes. It references higher doses, but not outcome measures clearly."
-          },
-          {
-            "ref_sentence_index": 3,
-            "conclusion_text": "[…] all while patients were maintained on a stable dose of metformin with or without a sulfonylurea.",
-            "score": 2,
-            "reason": "Some acknowledgment of treatment context, but does not highlight trial diversity or comparative insight. Slightly tangential."
-          }
-        ]
+        "modelA_score": 2.6666666666666665,
+        "modelB_score": 2.6666666666666665
       },
       "isTraining": true
     }
