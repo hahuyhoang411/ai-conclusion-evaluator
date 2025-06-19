@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
@@ -76,7 +75,11 @@ export const useEvaluator = () => {
         evaluationTasks = tasksData.map(task => ({ ...task, isTraining: false }));
       } else if (tasksData.trainingTasks && tasksData.evaluationTasks) {
         // New format
-        trainingTasks = tasksData.trainingTasks.map(task => ({ ...task, isTraining: true }));
+        trainingTasks = tasksData.trainingTasks.map(task => ({ 
+          ...task, 
+          isTraining: true,
+          detailedBreakdown: task.detailedBreakdown // Explicitly carry over
+        }));
         evaluationTasks = tasksData.evaluationTasks.map(task => ({ ...task, isTraining: false }));
       }
       
