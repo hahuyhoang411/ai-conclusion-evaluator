@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import ReactMarkdown from 'react-markdown';
 import { Button } from '@/components/ui/button';
@@ -8,6 +9,7 @@ import { Task } from '@/types/evaluation';
 import { Eye, EyeOff, GraduationCap } from 'lucide-react';
 import TaskTimer from './TaskTimer';
 import MarkdownRenderer from './MarkdownRenderer';
+import TrainingHighlight from './TrainingHighlight';
 
 interface TaskEvaluationProps {
   task: Task;
@@ -63,6 +65,7 @@ const TaskEvaluation: React.FC<TaskEvaluationProps> = ({
   return (
     <div className="space-y-6">
       {!isTraining && <TaskTimer isActive={true} />}
+      
       {/* Progress Tracker */}
       <div className="bg-white p-4 rounded-lg shadow-sm border">
         <div className="flex justify-between items-center">
@@ -85,7 +88,7 @@ const TaskEvaluation: React.FC<TaskEvaluationProps> = ({
         </div>
       </div>
 
-      {/* Reference Conclusion */}
+      {/* Task Title */}
       <Card>
         <CardHeader>
           <div className='mb-4'>
@@ -94,11 +97,7 @@ const TaskEvaluation: React.FC<TaskEvaluationProps> = ({
             </h3>
             <p className="text-lg text-gray-800">{getTaskTitle()}</p>
           </div>
-          <CardTitle className="text-lg font-semibold text-blue-900">Reference Conclusion</CardTitle>
         </CardHeader>
-        <CardContent>
-          <p className="text-gray-800 leading-relaxed">{task.referenceConclusion}</p>
-        </CardContent>
       </Card>
 
       {/* Source Abstracts Toggle */}
@@ -130,7 +129,7 @@ const TaskEvaluation: React.FC<TaskEvaluationProps> = ({
         )}
       </div>
 
-      {/* Training Mode: Correct Scores Display */}
+      {/* Training Mode: Enhanced Reference Display */}
       {isTraining && task.correctScores && (
         <div>
           <Button
@@ -139,109 +138,171 @@ const TaskEvaluation: React.FC<TaskEvaluationProps> = ({
             className="flex items-center gap-2 bg-blue-50 border-blue-200 text-blue-700 hover:bg-blue-100"
           >
             <GraduationCap size={16} />
-            {showCorrectScores ? 'Hide' : 'Show'} Correct Scores (Training Reference)
+            {showCorrectScores ? 'Hide' : 'Show'} Reference Scores & Highlights
           </Button>
           
           {showCorrectScores && (
-            <Card className="mt-4 border-blue-200 bg-blue-50">
-              <CardHeader>
-                <CardTitle className="text-lg font-semibold text-blue-800">Reference Scores</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="grid md:grid-cols-2 gap-4">
-                  <div className="p-3 bg-white rounded-lg border">
-                    <p className="font-medium text-green-700">
-                      Conclusion 1 Score: {task.correctScores.modelA_score.toFixed(2)}
-                    </p>
-                  </div>
-                  <div className="p-3 bg-white rounded-lg border">
-                    <p className="font-medium text-purple-700">
-                      Conclusion 2 Score: {task.correctScores.modelB_score.toFixed(2)}
-                    </p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
+            <div className="mt-4">
+              <TrainingHighlight
+                referenceConclusion={task.referenceConclusion}
+                conclusionA={task.modelOutputs.conclusionA}
+                conclusionB={task.modelOutputs.conclusionB}
+                correctScores={task.correctScores}
+              />
+            </div>
           )}
         </div>
       )}
 
-      {/* Side-by-Side Comparison */}
-      <form onSubmit={handleSubmit} className="space-y-6">
-        <div className="grid md:grid-cols-2 gap-6">
-          {/* Conclusion A */}
-          <Card>
+      {/* Regular Reference Conclusion (for non-training or when training highlights are hidden) */}
+      {(!isTraining || !showCorrectScores) && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-lg font-semibold text-blue-900">Reference Conclusion</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-gray-800 leading-relaxed">{task.referenceConclusion}</p>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Side-by-Side Comparison (for evaluation or when training highlights are hidden) */}
+      {(!isTraining || !showCorrectScores) && (
+        <form onSubmit={handleSubmit} className="space-y-6">
+          <div className="grid md:grid-cols-2 gap-6">
+            {/* Conclusion A */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-lg font-semibold text-green-700">
+                  Conclusion 1
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <p className="text-gray-800 leading-relaxed mb-4 whitespace-pre-line">
+                  {task.modelOutputs.conclusionA}
+                </p>
+                
+                <div>
+                  <Label className="text-sm font-medium text-gray-700 mb-2 block">
+                    Score for Conclusion 1:
+                  </Label>
+                  <RadioGroup value={scoreA} onValueChange={setScoreA} className="space-y-2">
+                    {scoreOptions.map((option) => (
+                      <div key={option.value} className="flex items-center space-x-2">
+                        <RadioGroupItem value={option.value} id={`a-${option.value}`} />
+                        <Label htmlFor={`a-${option.value}`} className="text-sm cursor-pointer flex-1">
+                          {option.label}
+                        </Label>
+                      </div>
+                    ))}
+                  </RadioGroup>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Conclusion B */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-lg font-semibold text-purple-700">
+                  Conclusion 2
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <p className="text-gray-800 leading-relaxed mb-4 whitespace-pre-line">
+                  {task.modelOutputs.conclusionB}
+                </p>
+                
+                <div>
+                  <Label className="text-sm font-medium text-gray-700 mb-2 block">
+                    Score for Conclusion 2:
+                  </Label>
+                  <RadioGroup value={scoreB} onValueChange={setScoreB} className="space-y-2">
+                    {scoreOptions.map((option) => (
+                      <div key={option.value} className="flex items-center space-x-2">
+                        <RadioGroupItem value={option.value} id={`b-${option.value}`} />
+                        <Label htmlFor={`b-${option.value}`} className="text-sm cursor-pointer flex-1">
+                          {option.label}
+                        </Label>
+                      </div>
+                    ))}
+                  </RadioGroup>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Submit Button */}
+          <div className="flex justify-center">
+            <Button 
+              type="submit" 
+              size="lg"
+              disabled={!scoreA || !scoreB || loading}
+              className={`px-8 ${isTraining ? 'bg-blue-600 hover:bg-blue-700' : ''}`}
+            >
+              {loading ? 'Submitting...' : isTraining ? 'Next Training Task' : 'Submit and Next'}
+            </Button>
+          </div>
+        </form>
+      )}
+
+      {/* Training Mode: Scoring Form (when reference is shown) */}
+      {isTraining && showCorrectScores && (
+        <form onSubmit={handleSubmit} className="space-y-6">
+          <Card className="bg-blue-50 border-blue-200">
             <CardHeader>
-              <CardTitle className="text-lg font-semibold text-green-700">
-                Conclusion 1
+              <CardTitle className="text-lg font-semibold text-blue-800">
+                Practice Scoring
               </CardTitle>
             </CardHeader>
-            <CardContent className="space-y-4">
-              <p className="text-gray-800 leading-relaxed mb-4 whitespace-pre-line">
-                {task.modelOutputs.conclusionA}
-              </p>
-              
-              <div>
-                <Label className="text-sm font-medium text-gray-700 mb-2 block">
-                  Score for Conclusion 1:
-                </Label>
-                <RadioGroup value={scoreA} onValueChange={setScoreA} className="space-y-2">
-                  {scoreOptions.map((option) => (
-                    <div key={option.value} className="flex items-center space-x-2">
-                      <RadioGroupItem value={option.value} id={`a-${option.value}`} />
-                      <Label htmlFor={`a-${option.value}`} className="text-sm cursor-pointer flex-1">
-                        {option.label}
-                      </Label>
-                    </div>
-                  ))}
-                </RadioGroup>
+            <CardContent className="space-y-6">
+              <div className="grid md:grid-cols-2 gap-6">
+                <div>
+                  <Label className="text-sm font-medium text-gray-700 mb-2 block">
+                    Your Score for Conclusion 1:
+                  </Label>
+                  <RadioGroup value={scoreA} onValueChange={setScoreA} className="space-y-1">
+                    {scoreOptions.map((option) => (
+                      <div key={option.value} className="flex items-center space-x-2">
+                        <RadioGroupItem value={option.value} id={`train-a-${option.value}`} />
+                        <Label htmlFor={`train-a-${option.value}`} className="text-sm cursor-pointer flex-1">
+                          {option.label}
+                        </Label>
+                      </div>
+                    ))}
+                  </RadioGroup>
+                </div>
+
+                <div>
+                  <Label className="text-sm font-medium text-gray-700 mb-2 block">
+                    Your Score for Conclusion 2:
+                  </Label>
+                  <RadioGroup value={scoreB} onValueChange={setScoreB} className="space-y-1">
+                    {scoreOptions.map((option) => (
+                      <div key={option.value} className="flex items-center space-x-2">
+                        <RadioGroupItem value={option.value} id={`train-b-${option.value}`} />
+                        <Label htmlFor={`train-b-${option.value}`} className="text-sm cursor-pointer flex-1">
+                          {option.label}
+                        </Label>
+                      </div>
+                    ))}
+                  </RadioGroup>
+                </div>
+              </div>
+
+              <div className="flex justify-center">
+                <Button 
+                  type="submit" 
+                  size="lg"
+                  disabled={!scoreA || !scoreB || loading}
+                  className="px-8 bg-blue-600 hover:bg-blue-700"
+                >
+                  {loading ? 'Submitting...' : 'Next Training Task'}
+                </Button>
               </div>
             </CardContent>
           </Card>
-
-          {/* Conclusion B */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-lg font-semibold text-purple-700">
-                Conclusion 2
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <p className="text-gray-800 leading-relaxed mb-4 whitespace-pre-line">
-                {task.modelOutputs.conclusionB}
-              </p>
-              
-              <div>
-                <Label className="text-sm font-medium text-gray-700 mb-2 block">
-                  Score for Conclusion 2:
-                </Label>
-                <RadioGroup value={scoreB} onValueChange={setScoreB} className="space-y-2">
-                  {scoreOptions.map((option) => (
-                    <div key={option.value} className="flex items-center space-x-2">
-                      <RadioGroupItem value={option.value} id={`b-${option.value}`} />
-                      <Label htmlFor={`b-${option.value}`} className="text-sm cursor-pointer flex-1">
-                        {option.label}
-                      </Label>
-                    </div>
-                  ))}
-                </RadioGroup>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Submit Button */}
-        <div className="flex justify-center">
-          <Button 
-            type="submit" 
-            size="lg"
-            disabled={!scoreA || !scoreB || loading}
-            className={`px-8 ${isTraining ? 'bg-blue-600 hover:bg-blue-700' : ''}`}
-          >
-            {loading ? 'Submitting...' : isTraining ? 'Next Training Task' : 'Submit and Next'}
-          </Button>
-        </div>
-      </form>
+        </form>
+      )}
     </div>
   );
 };
