@@ -17,7 +17,6 @@ export interface Task {
     modelB_score: number;
   };
   isTraining: boolean;
-  detailedBreakdown?: DetailedBreakdown[];
   // Legacy support for old format
   metaAnalysisName?: string;
 }
@@ -44,18 +43,4 @@ export interface Evaluation {
   session_start_time: string | null;
   evaluation_end_time: string | null;
   created_at: string;
-}
-
-export interface Match {
-  phrase: string | null;
-  score: number;
-  justification: string;
-}
-
-export interface DetailedBreakdown {
-  ref_sentence_index: number;
-  matches: {
-    A: Match;
-    B: Match;
-  };
 }
