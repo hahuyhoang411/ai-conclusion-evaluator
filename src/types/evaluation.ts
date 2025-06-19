@@ -1,3 +1,15 @@
+export interface DetailedEvaluationItem {
+  ref_sentence_index: number;
+  conclusion_text: string;
+  score: number;
+  reason: string;
+}
+
+export interface DetailedEvaluation {
+  conclusionA: DetailedEvaluationItem[];
+  conclusionB: DetailedEvaluationItem[];
+}
+
 export interface Task {
   taskId: number | string;
   sourcePaperId?: number;
@@ -16,6 +28,7 @@ export interface Task {
     modelA_score: number;
     modelB_score: number;
   };
+  detailedEvaluation?: DetailedEvaluation;
   isTraining: boolean;
   // Legacy support for old format
   metaAnalysisName?: string;

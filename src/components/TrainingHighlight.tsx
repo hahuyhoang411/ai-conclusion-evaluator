@@ -1,8 +1,19 @@
-
 import React, { useState, useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { HelpCircle } from 'lucide-react';
+
+interface DetailedEvaluationItem {
+  ref_sentence_index: number;
+  conclusion_text: string;
+  score: number;
+  reason: string;
+}
+
+interface DetailedEvaluation {
+  conclusionA: DetailedEvaluationItem[];
+  conclusionB: DetailedEvaluationItem[];
+}
 
 interface TrainingHighlightProps {
   referenceConclusion: string;
@@ -12,88 +23,93 @@ interface TrainingHighlightProps {
     modelA_score: number;
     modelB_score: number;
   };
+  detailedEvaluation: DetailedEvaluation;
 }
 
 const TrainingHighlight: React.FC<TrainingHighlightProps> = ({
   referenceConclusion,
   conclusionA,
   conclusionB,
-  correctScores
+  correctScores,
+  detailedEvaluation,
 }) => {
   const [hoveredSentenceIndex, setHoveredSentenceIndex] = useState<number | null>(null);
+  const [hoveredEvaluation, setHoveredEvaluation] = useState<DetailedEvaluationItem | null>(null);
 
-  // Enhanced sentence splitting that handles decimal numbers
   const splitIntoSentences = (text: string): string[] => {
-    // First, protect decimal numbers by temporarily replacing them
-    const protectedText = text.replace(/(\d+\.\d+)/g, '###DECIMAL$1###');
+    const protectedText = text.replace(/(\\d+\\.\\d+)/g, '###DECIMAL$1###');
     
-    // Split on sentence endings, but be more careful about periods
     const sentences = protectedText
-      .split(/(?<=[.!?])\s+(?=[A-Z])/) // Split on sentence endings followed by whitespace and capital letter
+      .split(/(?<=[.!?])\\s+(?=[A-Z])/)
       .map(s => s.trim())
       .filter(s => s.length > 0)
       .map(s => {
-        // Restore decimal numbers
-        return s.replace(/###DECIMAL(\d+\.\d+)###/g, '$1');
+        return s.replace(/###DECIMAL(\\d+\\.\\d+)###/g, '$1');
       });
 
     return sentences;
   };
 
   const referenceSentences = useMemo(() => splitIntoSentences(referenceConclusion), [referenceConclusion]);
-  const conclusionASentences = useMemo(() => splitIntoSentences(conclusionA), [conclusionA]);
-  const conclusionBSentences = useMemo(() => splitIntoSentences(conclusionB), [conclusionB]);
 
-  // Simple keyword-based matching for demonstration
-  const findMatchingSentences = (referenceSentence: string, targetSentences: string[]): number[] => {
-    const referenceWords = referenceSentence.toLowerCase().split(/\s+/).filter(word => word.length > 3);
-    const matches: number[] = [];
-
-    targetSentences.forEach((sentence, index) => {
-      const sentenceWords = sentence.toLowerCase().split(/\s+/);
-      const commonWords = referenceWords.filter(word => sentenceWords.some(sw => sw.includes(word) || word.includes(sw)));
-      
-      // If more than 20% of reference words are found, consider it a match
-      if (commonWords.length / referenceWords.length > 0.2) {
-        matches.push(index);
-      }
-    });
-
-    return matches;
-  };
-
-  const renderHighlightedText = (sentences: string[], matchingIndices: number[], isReference: boolean = false) => {
+  const renderReferenceConclusion = () => {
     return (
       <div className="space-y-1">
-        {sentences.map((sentence, index) => {
-          const isHighlighted = hoveredSentenceIndex !== null && matchingIndices.includes(index);
-          const isHovered = isReference && hoveredSentenceIndex === index;
-          
-          return (
-            <span
-              key={index}
-              className={`inline-block transition-all duration-200 cursor-pointer ${
-                isHighlighted || isHovered
-                  ? 'bg-yellow-200 shadow-lg transform scale-105 rounded px-1'
-                  : 'hover:bg-yellow-50'
-              } ${isReference ? 'border-b border-dotted border-gray-300' : ''}`}
-              onMouseEnter={() => isReference ? setHoveredSentenceIndex(index) : null}
-              onMouseLeave={() => isReference ? setHoveredSentenceIndex(null) : null}
-            >
-              {sentence}{index < sentences.length - 1 ? ' ' : ''}
-            </span>
-          );
-        })}
+        {referenceSentences.map((sentence, index) => (
+          <span
+            key={index}
+            className={`inline-block transition-all duration-200 cursor-pointer hover:bg-yellow-50 ${
+              hoveredSentenceIndex === index ? 'bg-yellow-200 shadow-lg transform scale-105 rounded px-1' : ''
+            } border-b border-dotted border-gray-300`}
+            onMouseEnter={() => setHoveredSentenceIndex(index)}
+            onMouseLeave={() => setHoveredSentenceIndex(null)}
+          >
+            {sentence}{index < referenceSentences.length - 1 ? ' ' : ''}
+          </span>
+        ))}
       </div>
     );
   };
 
-  const matchingIndicesA = hoveredSentenceIndex !== null 
-    ? findMatchingSentences(referenceSentences[hoveredSentenceIndex], conclusionASentences)
-    : [];
-  const matchingIndicesB = hoveredSentenceIndex !== null 
-    ? findMatchingSentences(referenceSentences[hoveredSentenceIndex], conclusionBSentences)
-    : [];
+  const renderConclusion = (conclusion: string, evaluationItems: DetailedEvaluationItem[]) => {
+    const cleanedConclusion = conclusion.replace(/\*\*Primary Concluding Statement:\*\*\\n\\n/g, '').replace(/\*\*Primary Concluding Statement:\*\*\s/,'');
+
+    if (hoveredSentenceIndex === null) {
+      return <div>{cleanedConclusion}</div>;
+    }
+
+    const relevantEvals = evaluationItems.filter(item => item.ref_sentence_index === hoveredSentenceIndex);
+    if (relevantEvals.length === 0) {
+      return <div>{cleanedConclusion}</div>;
+    }
+    
+    const highlighInfo = relevantEvals[0];
+    const highlightedText = highlighInfo.conclusion_text.replace(/\[…\]/g, '').trim();
+
+    if (!highlightedText || highlightedText === '(Not clearly addressed)') {
+        return <div>{cleanedConclusion}</div>;
+    }
+    
+    const parts = cleanedConclusion.split(new RegExp(`(${escapeRegExp(highlightedText)})`, 'gi'));
+
+    return (
+      <div onMouseEnter={() => setHoveredEvaluation(highlighInfo)} onMouseLeave={() => setHoveredEvaluation(null)}>
+        {parts.map((part, index) =>
+          part.toLowerCase() === highlightedText.toLowerCase() ? (
+            <span key={index} className="bg-yellow-200 shadow-lg transform scale-105 rounded px-1">
+              {part}
+            </span>
+          ) : (
+            <span key={index}>{part}</span>
+          )
+        )}
+      </div>
+    );
+  };
+
+  const escapeRegExp = (string: string) => {
+    return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); // $& means the whole matched string
+  }
 
   return (
     <div className="space-y-6">
@@ -121,7 +137,7 @@ const TrainingHighlight: React.FC<TrainingHighlightProps> = ({
         </CardHeader>
         <CardContent>
           <div className="text-gray-800 leading-relaxed">
-            {renderHighlightedText(referenceSentences, [], true)}
+            {renderReferenceConclusion()}
           </div>
         </CardContent>
       </Card>
@@ -137,7 +153,7 @@ const TrainingHighlight: React.FC<TrainingHighlightProps> = ({
           </CardHeader>
           <CardContent>
             <div className="text-gray-800 leading-relaxed">
-              {renderHighlightedText(conclusionASentences, matchingIndicesA)}
+              {renderConclusion(conclusionA, detailedEvaluation.conclusionA)}
             </div>
           </CardContent>
         </Card>
@@ -151,17 +167,16 @@ const TrainingHighlight: React.FC<TrainingHighlightProps> = ({
           </CardHeader>
           <CardContent>
             <div className="text-gray-800 leading-relaxed">
-              {renderHighlightedText(conclusionBSentences, matchingIndicesB)}
+              {renderConclusion(conclusionB, detailedEvaluation.conclusionB)}
             </div>
           </CardContent>
         </Card>
       </div>
 
-      {hoveredSentenceIndex !== null && (
+      {hoveredEvaluation && (
         <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
           <p className="text-sm text-amber-800">
-            <strong>Highlighting:</strong> Sentence {hoveredSentenceIndex + 1} from the reference and its potential matches in the generated conclusions.
-            Yellow highlights show content similarity that contributes to scoring.
+            <strong>Highlighting reason:</strong> (Score: {hoveredEvaluation.score}) {hoveredEvaluation.reason}
           </p>
         </div>
       )}
