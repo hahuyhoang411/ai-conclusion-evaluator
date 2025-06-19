@@ -44,13 +44,14 @@ const TrainingHighlight: React.FC<TrainingHighlightProps> = ({
 
   const referenceSentences = useMemo(() => splitIntoSentences(referenceConclusion), [referenceConclusion]);
 
-  // Get score color based on score value
+  // Get score color based on exact score value
   const getScoreColor = (score: number) => {
-    if (score >= 4.5) return 'bg-green-200 border-green-400 text-green-800';
-    if (score >= 3.5) return 'bg-blue-200 border-blue-400 text-blue-800';
-    if (score >= 2.5) return 'bg-yellow-200 border-yellow-400 text-yellow-800';
-    if (score >= 1.5) return 'bg-orange-200 border-orange-400 text-orange-800';
-    return 'bg-red-200 border-red-400 text-red-800';
+    if (score === 5) return 'bg-green-200 border-green-400 text-green-800';
+    if (score === 4) return 'bg-blue-200 border-blue-400 text-blue-800';
+    if (score === 3) return 'bg-yellow-200 border-yellow-400 text-yellow-800';
+    if (score === 2) return 'bg-orange-200 border-orange-400 text-orange-800';
+    if (score === 1) return 'bg-red-200 border-red-400 text-red-800';
+    return 'bg-gray-300 border-gray-500 text-gray-700'; // score 0
   };
 
   // Render text with highlighted phrases using exact phrase matching
@@ -237,30 +238,52 @@ const TrainingHighlight: React.FC<TrainingHighlightProps> = ({
       <Card className="bg-gray-50 border-gray-200">
         <CardHeader>
           <CardTitle className="text-sm font-semibold text-gray-700">
-            Score Legend
+            Scoring Rubric (0-5 Scale)
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="flex flex-wrap gap-3 text-xs">
-            <div className="flex items-center gap-1">
-              <div className="w-4 h-4 bg-green-200 border border-green-400 rounded"></div>
-              <span>5-4.5: Excellent</span>
+          <div className="space-y-2 text-sm">
+            <div className="flex items-start gap-2">
+              <div className="w-6 h-6 bg-green-200 border border-green-400 rounded flex items-center justify-center text-xs font-bold text-green-800">5</div>
+              <div>
+                <span className="font-semibold text-green-700">Excellent Similarity / Semantically Equivalent</span>
+                <p className="text-xs text-gray-600 mt-1">Accurately captures all main findings, key specifics, essential nuance/caveats, and core implications/future directions from the original.</p>
+              </div>
             </div>
-            <div className="flex items-center gap-1">
-              <div className="w-4 h-4 bg-blue-200 border border-blue-400 rounded"></div>
-              <span>4.4-3.5: High</span>
+            <div className="flex items-start gap-2">
+              <div className="w-6 h-6 bg-blue-200 border border-blue-400 rounded flex items-center justify-center text-xs font-bold text-blue-800">4</div>
+              <div>
+                <span className="font-semibold text-blue-700">High Similarity / Mostly Equivalent</span>
+                <p className="text-xs text-gray-600 mt-1">Accurately captures the main findings and most key specifics. May miss minor details, some nuance/caveats, or less critical implications.</p>
+              </div>
             </div>
-            <div className="flex items-center gap-1">
-              <div className="w-4 h-4 bg-yellow-200 border border-yellow-400 rounded"></div>
-              <span>3.4-2.5: Moderate</span>
+            <div className="flex items-start gap-2">
+              <div className="w-6 h-6 bg-yellow-200 border border-yellow-400 rounded flex items-center justify-center text-xs font-bold text-yellow-800">3</div>
+              <div>
+                <span className="font-semibold text-yellow-700">Moderate Similarity / Partially Equivalent</span>
+                <p className="text-xs text-gray-600 mt-1">Captures the main finding(s) correctly but misses significant supporting details, comparisons, nuance, limitations, or implications mentioned in the original.</p>
+              </div>
             </div>
-            <div className="flex items-center gap-1">
-              <div className="w-4 h-4 bg-orange-200 border border-orange-400 rounded"></div>
-              <span>2.4-1.5: Low</span>
+            <div className="flex items-start gap-2">
+              <div className="w-6 h-6 bg-orange-200 border border-orange-400 rounded flex items-center justify-center text-xs font-bold text-orange-800">2</div>
+              <div>
+                <span className="font-semibold text-orange-700">Low Similarity / Superficially Related</span>
+                <p className="text-xs text-gray-600 mt-1">Captures *some* element related to the topic but misrepresents the main finding(s) or omits crucial information necessary to understand the original conclusion's core message.</p>
+              </div>
             </div>
-            <div className="flex items-center gap-1">
-              <div className="w-4 h-4 bg-red-200 border border-red-400 rounded"></div>
-              <span>1.4-0: Very Low</span>
+            <div className="flex items-start gap-2">
+              <div className="w-6 h-6 bg-red-200 border border-red-400 rounded flex items-center justify-center text-xs font-bold text-red-800">1</div>
+              <div>
+                <span className="font-semibold text-red-700">Very Low Similarity / Barely Related</span>
+                <p className="text-xs text-gray-600 mt-1">Mentions the same general topic but the stated conclusions are substantially different, contradictory in parts, or completely miss the scope and findings of the original.</p>
+              </div>
+            </div>
+            <div className="flex items-start gap-2">
+              <div className="w-6 h-6 bg-gray-300 border border-gray-500 rounded flex items-center justify-center text-xs font-bold text-gray-700">0</div>
+              <div>
+                <span className="font-semibold text-gray-700">No Similarity / Contradictory or Irrelevant</span>
+                <p className="text-xs text-gray-600 mt-1">The generated conclusion is on a completely different topic, directly contradicts the main findings of the original, or is nonsensical/irrelevant.</p>
+              </div>
             </div>
           </div>
         </CardContent>

@@ -30,52 +30,50 @@
           "referenceSentenceIndex": 0,
           "conclusionA": {
             "phrase": "achieve significantly higher plasma and cerebrospinal fluid exposures without increased toxicity",
-            "startIndex": 183,
-            "endIndex": 274,
             "score": 5,
             "explanation": "Excellent—captures both plasma/CSF increases and safety"
           },
           "conclusionB": {
-            "phrase": "results in comparable plasma drug exposures – as measured by AUC0-24",
-            "startIndex": 81,
-            "endIndex": 148,
+            "phrase": "comparable plasma drug exposures – as measured by AUC0-24 – to intravenous administration",
             "score": 3,
             "explanation": "Moderate—captures plasma AUC increase but omits CSF detail and safety nuance"
           }
         },
         {
           "referenceSentenceIndex": 1,
+          "conclusionA": {
+            "phrase": "intensified regimens using higher doses of rifampin",
+            "score": 4,
+            "explanation": "Suggests standard dose is low and higher dose used in research, implicitly matching “was used in a low dose."
+          },
           "conclusionB": {
             "phrase": "supporting the feasibility of utilizing higher oral doses in future clinical trials",
-            "startIndex": 178,
-            "endIndex": 260,
             "score": 4,
-            "explanation": "High—captures need for trials of higher doses, though 'low dose' rationale is implicit"
+            "explanation": "Also implies future investigation into higher oral dosing, reasonably aligned."
           }
         },
         {
           "referenceSentenceIndex": 2,
           "conclusionA": {
             "phrase": "survival benefits have not been definitively established",
-            "startIndex": 284,
-            "endIndex": 340,
             "score": 4,
-            "explanation": "High—correctly notes lack of established benefit, though 'treatment outcome' vs. 'survival' is slightly narrower"
+            "explanation": "No improvement is reasonably matched with “not definitively established” survival benefits."
+          },
+          "conclusionB": {
+            "phrase": "",
+            "score": 1,
+            "explanation": "Conclusion 2 omits outcome/survival results completely."
           }
         },
         {
           "referenceSentenceIndex": 3,
           "conclusionA": {
-            "phrase": "require confirmation in larger phase III trials",
-            "startIndex": 345,
-            "endIndex": 393,
+            "phrase": "require confirmation in larger phase III trials.",
             "score": 5,
             "explanation": "Excellent—almost word-for-word match on phase III trials for efficacy"
           },
           "conclusionB": {
             "phrase": "in future clinical trials evaluating treatment efficacy",
-            "startIndex": 261,
-            "endIndex": 317,
             "score": 3,
             "explanation": "Moderate—captures 'future trials' and 'efficacy' but lacks 'large sample size / phase III' specificity"
           }
