@@ -1,7 +1,5 @@
 export interface PhraseMapping {
   phrase: string;
-  startIndex: number;
-  endIndex: number;
   score: number;
   explanation: string;
 }

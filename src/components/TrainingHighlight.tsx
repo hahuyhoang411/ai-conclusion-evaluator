@@ -53,35 +53,53 @@ const TrainingHighlight: React.FC<TrainingHighlightProps> = ({
     return 'bg-red-200 border-red-400 text-red-800';
   };
 
-  // Render text with highlighted phrases
+  // Render text with highlighted phrases using exact phrase matching
   const renderTextWithHighlights = (
     text: string, 
-    mappings: Array<{ startIndex: number; endIndex: number; score: number; explanation: string }>,
+    mappings: Array<{ phrase: string; score: number; explanation: string }>,
     isActive: boolean
   ) => {
     if (!isActive || mappings.length === 0) {
       return <span>{text}</span>;
     }
 
-    // Sort mappings by start index to handle overlaps properly
-    const sortedMappings = [...mappings].sort((a, b) => a.startIndex - b.startIndex);
+    let result = text;
+    const highlightedParts: Array<{ phrase: string; score: number; explanation: string; index: number }> = [];
+
+    // Find all phrase occurrences
+    mappings.forEach(mapping => {
+      const { phrase, score, explanation } = mapping;
+      const index = result.toLowerCase().indexOf(phrase.toLowerCase());
+      
+      if (index !== -1) {
+        highlightedParts.push({ phrase, score, explanation, index });
+      }
+    });
+
+    // Sort by index to handle them in order
+    highlightedParts.sort((a, b) => a.index - b.index);
+
+    if (highlightedParts.length === 0) {
+      return <span>{text}</span>;
+    }
+
     const parts: React.ReactNode[] = [];
     let lastIndex = 0;
 
-    sortedMappings.forEach((mapping, idx) => {
-      const { startIndex, endIndex, score, explanation } = mapping;
+    highlightedParts.forEach((part, idx) => {
+      const { phrase, score, explanation, index } = part;
+      const endIndex = index + phrase.length;
       
       // Add text before highlight
-      if (startIndex > lastIndex) {
+      if (index > lastIndex) {
         parts.push(
           <span key={`text-${idx}`}>
-            {text.slice(lastIndex, startIndex)}
+            {text.slice(lastIndex, index)}
           </span>
         );
       }
 
       // Add highlighted phrase with tooltip
-      const highlightedText = text.slice(startIndex, endIndex);
       parts.push(
         <TooltipProvider key={`highlight-${idx}`}>
           <Tooltip>
@@ -89,7 +107,7 @@ const TrainingHighlight: React.FC<TrainingHighlightProps> = ({
               <span 
                 className={`${getScoreColor(score)} px-1 py-0.5 rounded border-2 cursor-help transition-all duration-200 hover:shadow-lg`}
               >
-                {highlightedText}
+                {text.slice(index, endIndex)}
               </span>
             </TooltipTrigger>
             <TooltipContent>
