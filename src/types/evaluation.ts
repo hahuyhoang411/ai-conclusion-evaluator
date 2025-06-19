@@ -1,10 +1,3 @@
-export interface DetailedScore {
-  ref_sentence_index: number;
-  conclusion_fragment: string | null;
-  score: number;
-  explanation: string;
-}
-
 export interface Task {
   taskId: number | string;
   sourcePaperId?: number;
@@ -22,10 +15,6 @@ export interface Task {
   correctScores?: {
     modelA_score: number;
     modelB_score: number;
-  };
-  detailedScoring?: {
-    modelA: DetailedScore[];
-    modelB: DetailedScore[];
   };
   isTraining: boolean;
   // Legacy support for old format

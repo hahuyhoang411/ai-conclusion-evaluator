@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import ReactMarkdown from 'react-markdown';
 import { Button } from '@/components/ui/button';
@@ -147,7 +148,6 @@ const TaskEvaluation: React.FC<TaskEvaluationProps> = ({
                 conclusionA={task.modelOutputs.conclusionA}
                 conclusionB={task.modelOutputs.conclusionB}
                 correctScores={task.correctScores}
-                detailedScoring={task.detailedScoring}
               />
             </div>
           )}
