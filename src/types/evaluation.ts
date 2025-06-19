@@ -16,9 +16,22 @@ export interface Task {
     modelA_score: number;
     modelB_score: number;
   };
+  detailedComparisons?: SentenceComparison[];
   isTraining: boolean;
   // Legacy support for old format
   metaAnalysisName?: string;
+}
+
+export interface SentenceComparison {
+  ref_sentence_index: number;
+  conclusionA: SubComparison;
+  conclusionB: SubComparison;
+}
+
+export interface SubComparison {
+  conclusion_fragment: string;
+  score: number;
+  explanation: string;
 }
 
 export interface TasksData {

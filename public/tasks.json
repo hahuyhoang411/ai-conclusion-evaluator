@@ -25,7 +25,61 @@
         "modelA_score": 4.0,
         "modelB_score": 2.0
       },
-      "isTraining": true
+      "isTraining": true,
+      "detailedComparisons": [
+        {
+          "ref_sentence_index": 0,
+          "conclusionA": {
+            "conclusion_fragment": "intensified regimens using higher doses of rifampin, specifically oral doses of 20–35 mg/kg achieve significantly higher plasma and cerebrospinal fluid exposures without increased toxicity",
+            "score": 5,
+            "explanation": "semantically equivalent; it includes key numerical dosage details and captures both increased exposure and lack of increased toxicity."
+          },
+          "conclusionB": {
+            "conclusion_fragment": "Increasing the oral dose of rifampin to 35 mg/kg results in comparable plasma drug exposures – as measured by AUC0-24 – to intravenous administration of 20 mg/kg",
+            "score": 3,
+            "explanation": "partially equivalent; it addresses AUC and higher dosing but shifts focus from increase in PK parameters to comparison between oral and IV routes. It omits the key point of no increase in adverse reactions."
+          }
+        },
+        {
+          "ref_sentence_index": 1,
+          "conclusionA": {
+            "conclusion_fragment": "however, survival benefits have not been definitively established and require confirmation in larger phase III trials.",
+            "score": 3,
+            "explanation": "partially equivalent; the need for further study is captured, but the motivation for rethinking the standard dosing (possibly underdosed) is less explicit."
+          },
+          "conclusionB": {
+            "conclusion_fragment": "supporting the feasibility of utilizing higher oral doses in future clinical trials evaluating treatment efficacy.",
+            "score": 3,
+            "explanation": "partially equivalent; supports higher doses and future trials, but omits the hypothesis of underdosing and the call for investigation into that."
+          }
+        },
+        {
+          "ref_sentence_index": 2,
+          "conclusionA": {
+            "conclusion_fragment": "survival benefits have not been definitively established […]",
+            "score": 4,
+            "explanation": "mostly equivalent; \"no improvement in treatment outcome\" is slightly stronger than \"not definitively established,\" but both communicate lack of proven efficacy."
+          },
+          "conclusionB": {
+            "conclusion_fragment": "(Not clearly addressed)",
+            "score": 1,
+            "explanation": "this point is largely missing; conclusion 2 doesn't mention treatment outcomes or survival/effectiveness."
+          }
+        },
+        {
+          "ref_sentence_index": 3,
+          "conclusionA": {
+            "conclusion_fragment": "require confirmation in larger phase III trials.",
+            "score": 5,
+            "explanation": "semantically equivalent; both call for phase III trials to assess efficacy of higher-dose rifampin."
+          },
+          "conclusionB": {
+            "conclusion_fragment": "future clinical trials evaluating treatment efficacy.",
+            "score": 3,
+            "explanation": "partially captures this, but lacks specificity (e.g., \"large sample size,\" \"phase III\")."
+          }
+        }
+      ]
     },
     {
       "taskId": "train_2",
@@ -49,7 +103,48 @@
         "modelA_score": 3.0,
         "modelB_score": 3.0
       },
-      "isTraining": true
+      "isTraining": true,
+      "detailedComparisons": [
+        {
+          "ref_sentence_index": 0,
+          "conclusionA": {
+            "conclusion_fragment": "Semaglutide 2.0 mg demonstrated superior HbA1c reduction compared to dulaglutide 3.0 mg and 4.5 mg […]",
+            "score": 4,
+            "explanation": "Captures HbA1c benefit clearly but omits body weight, which is a key secondary outcome in the original."
+          },
+          "conclusionB": {
+            "conclusion_fragment": "Semaglutide 2.0 mg demonstrates efficacy benefits compared to dulaglutide […]",
+            "score": 3,
+            "explanation": "General \"efficacy benefits\" lacks specificity of HbA1c and weight outcomes. It references higher doses, but not outcome measures clearly."
+          }
+        },
+        {
+          "ref_sentence_index": 1,
+          "conclusionA": {
+            "conclusion_fragment": "However, this comparison is limited by the heterogeneity between the included trials and the indirect nature of the comparison itself.",
+            "score": 4,
+            "explanation": "The phrasing is more cautious, but it reflects the same limitation and interim nature of evidence. Missing the \"comparative effectiveness\" framing, but acknowledges the lack of head-to-head trials."
+          },
+          "conclusionB": {
+            "conclusion_fragment": "studies directly comparing semaglutide to dulaglutide in patients with inadequately controlled type 2 diabetes […]",
+            "score": 2,
+            "explanation": "Mentions comparisons and study contexts, but implies direct comparisons which contradicts the reference's indirect (ITC) method. Also misses \"comparative effectiveness\" framing."
+          }
+        },
+        {
+          "ref_sentence_index": 2,
+          "conclusionA": {
+            "conclusion_fragment": "(Not explicitly addressed)",
+            "score": 2,
+            "explanation": "Only a general mention of trials (SUSTAIN 7, AWARD-11, SUSTAIN FORTE), no emphasis on value of different trial populations or comparative insight."
+          },
+          "conclusionB": {
+            "conclusion_fragment": "all while patients were maintained on a stable dose of metformin with or without a sulfonylurea.",
+            "score": 2,
+            "explanation": "Some acknowledgment of treatment context, but does not highlight trial diversity or comparative insight. Slightly tangential."
+          }
+        }
+      ]
     }
   ],
   "evaluationTasks": [

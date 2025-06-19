@@ -1,8 +1,8 @@
-
 import React, { useState, useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { HelpCircle } from 'lucide-react';
+import { SentenceComparison } from '@/types/evaluation';
 
 interface TrainingHighlightProps {
   referenceConclusion: string;
@@ -12,28 +12,25 @@ interface TrainingHighlightProps {
     modelA_score: number;
     modelB_score: number;
   };
+  detailedComparisons?: SentenceComparison[];
 }
 
 const TrainingHighlight: React.FC<TrainingHighlightProps> = ({
   referenceConclusion,
   conclusionA,
   conclusionB,
-  correctScores
+  correctScores,
+  detailedComparisons
 }) => {
   const [hoveredSentenceIndex, setHoveredSentenceIndex] = useState<number | null>(null);
 
-  // Enhanced sentence splitting that handles decimal numbers
   const splitIntoSentences = (text: string): string[] => {
-    // First, protect decimal numbers by temporarily replacing them
     const protectedText = text.replace(/(\d+\.\d+)/g, '###DECIMAL$1###');
-    
-    // Split on sentence endings, but be more careful about periods
     const sentences = protectedText
-      .split(/(?<=[.!?])\s+(?=[A-Z])/) // Split on sentence endings followed by whitespace and capital letter
+      .split(/(?<=[.!?])\s+(?=[A-Z])/)
       .map(s => s.trim())
       .filter(s => s.length > 0)
       .map(s => {
-        // Restore decimal numbers
         return s.replace(/###DECIMAL(\d+\.\d+)###/g, '$1');
       });
 
@@ -41,59 +38,95 @@ const TrainingHighlight: React.FC<TrainingHighlightProps> = ({
   };
 
   const referenceSentences = useMemo(() => splitIntoSentences(referenceConclusion), [referenceConclusion]);
-  const conclusionASentences = useMemo(() => splitIntoSentences(conclusionA), [conclusionA]);
-  const conclusionBSentences = useMemo(() => splitIntoSentences(conclusionB), [conclusionB]);
 
-  // Simple keyword-based matching for demonstration
-  const findMatchingSentences = (referenceSentence: string, targetSentences: string[]): number[] => {
-    const referenceWords = referenceSentence.toLowerCase().split(/\s+/).filter(word => word.length > 3);
-    const matches: number[] = [];
-
-    targetSentences.forEach((sentence, index) => {
-      const sentenceWords = sentence.toLowerCase().split(/\s+/);
-      const commonWords = referenceWords.filter(word => sentenceWords.some(sw => sw.includes(word) || word.includes(sw)));
-      
-      // If more than 20% of reference words are found, consider it a match
-      if (commonWords.length / referenceWords.length > 0.2) {
-        matches.push(index);
-      }
-    });
-
-    return matches;
-  };
-
-  const renderHighlightedText = (sentences: string[], matchingIndices: number[], isReference: boolean = false) => {
+  const renderReferenceText = () => {
     return (
       <div className="space-y-1">
-        {sentences.map((sentence, index) => {
-          const isHighlighted = hoveredSentenceIndex !== null && matchingIndices.includes(index);
-          const isHovered = isReference && hoveredSentenceIndex === index;
+        {referenceSentences.map((sentence, index) => {
+          const isHovered = hoveredSentenceIndex === index;
           
           return (
             <span
               key={index}
               className={`inline-block transition-all duration-200 cursor-pointer ${
-                isHighlighted || isHovered
-                  ? 'bg-yellow-200 shadow-lg transform scale-105 rounded px-1'
-                  : 'hover:bg-yellow-50'
-              } ${isReference ? 'border-b border-dotted border-gray-300' : ''}`}
-              onMouseEnter={() => isReference ? setHoveredSentenceIndex(index) : null}
-              onMouseLeave={() => isReference ? setHoveredSentenceIndex(null) : null}
+                isHovered
+                  ? 'bg-blue-200 shadow-lg transform scale-105 rounded px-1'
+                  : 'hover:bg-blue-100'
+              } border-b border-dotted border-gray-300`}
+              onMouseEnter={() => setHoveredSentenceIndex(index)}
+              onMouseLeave={() => setHoveredSentenceIndex(null)}
             >
-              {sentence}{index < sentences.length - 1 ? ' ' : ''}
+              {sentence}{index < referenceSentences.length - 1 ? ' ' : ''}
             </span>
           );
         })}
       </div>
     );
   };
+  
+  const renderConclusionText = (conclusion: string, type: 'A' | 'B') => {
+    if (hoveredSentenceIndex === null || !detailedComparisons) {
+      return <p className="text-gray-800 leading-relaxed whitespace-pre-line">{conclusion}</p>;
+    }
 
-  const matchingIndicesA = hoveredSentenceIndex !== null 
-    ? findMatchingSentences(referenceSentences[hoveredSentenceIndex], conclusionASentences)
-    : [];
-  const matchingIndicesB = hoveredSentenceIndex !== null 
-    ? findMatchingSentences(referenceSentences[hoveredSentenceIndex], conclusionBSentences)
-    : [];
+    const comparison = detailedComparisons.find(c => c.ref_sentence_index === hoveredSentenceIndex);
+    if (!comparison) {
+      return <p className="text-gray-800 leading-relaxed whitespace-pre-line">{conclusion}</p>;
+    }
+    
+    const subComparison = type === 'A' ? comparison.conclusionA : comparison.conclusionB;
+    const fragment = subComparison.conclusion_fragment;
+
+    if (fragment === '(Not clearly addressed)' || fragment === '(Not explicitly addressed)') {
+      return (
+        <TooltipProvider>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <p className="text-gray-800 leading-relaxed whitespace-pre-line bg-gray-200 rounded p-2">
+                {conclusion}
+                <span className="block text-sm font-semibold mt-2 bg-yellow-200 rounded px-1 w-fit">
+                  Score: {subComparison.score} - Fragment not addressed.
+                </span>
+              </p>
+            </TooltipTrigger>
+            <TooltipContent>
+              <p className="max-w-xs">{subComparison.explanation}</p>
+            </TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
+      );
+    }
+    
+    const parts = conclusion.split(new RegExp(`(${fragment.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`));
+    
+    return (
+      <p className="text-gray-800 leading-relaxed whitespace-pre-line">
+        {parts.map((part, index) => {
+          if (part === fragment) {
+            return (
+              <TooltipProvider key={index}>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <span className="bg-yellow-200 shadow-lg transform scale-105 rounded px-1">
+                      {part}
+                    </span>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p className="max-w-xs">
+                      <strong>Score: {subComparison.score}</strong><br />
+                      {subComparison.explanation}
+                    </p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+            );
+          }
+          return <span key={index}>{part}</span>;
+        })}
+      </p>
+    );
+  };
+
 
   return (
     <div className="space-y-6">
@@ -121,7 +154,7 @@ const TrainingHighlight: React.FC<TrainingHighlightProps> = ({
         </CardHeader>
         <CardContent>
           <div className="text-gray-800 leading-relaxed">
-            {renderHighlightedText(referenceSentences, [], true)}
+            {renderReferenceText()}
           </div>
         </CardContent>
       </Card>
@@ -136,9 +169,7 @@ const TrainingHighlight: React.FC<TrainingHighlightProps> = ({
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-gray-800 leading-relaxed">
-              {renderHighlightedText(conclusionASentences, matchingIndicesA)}
-            </div>
+            {renderConclusionText(conclusionA, 'A')}
           </CardContent>
         </Card>
 
@@ -150,14 +181,12 @@ const TrainingHighlight: React.FC<TrainingHighlightProps> = ({
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-gray-800 leading-relaxed">
-              {renderHighlightedText(conclusionBSentences, matchingIndicesB)}
-            </div>
+            {renderConclusionText(conclusionB, 'B')}
           </CardContent>
         </Card>
       </div>
 
-      {hoveredSentenceIndex !== null && (
+      {hoveredSentenceIndex !== null && detailedComparisons?.find(c => c.ref_sentence_index === hoveredSentenceIndex) && (
         <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
           <p className="text-sm text-amber-800">
             <strong>Highlighting:</strong> Sentence {hoveredSentenceIndex + 1} from the reference and its potential matches in the generated conclusions.
