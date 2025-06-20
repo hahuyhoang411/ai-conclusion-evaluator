@@ -1,5 +1,1 @@
-
 project_id = "wqvjjltdtpixcebqvsbf"
-
-[functions.get-next-block]
-verify_jwt = false
