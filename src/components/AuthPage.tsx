@@ -57,7 +57,7 @@ const AuthPage = () => {
             <div className="flex items-center space-x-2">
               <Checkbox id="commitment" checked={hasCommitted} onCheckedChange={(checked) => setHasCommitted(checked as boolean)} />
               <Label htmlFor="commitment" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
-                I commit to finishing all assigned evaluation tasks to the best of my ability.
+                I commit to completing all assigned evaluation tasks to the best of my ability within the next hour.
               </Label>
             </div>
             <Button 
